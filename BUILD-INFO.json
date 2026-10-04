@@ -1,0 +1,27 @@
+{
+  "distribution": "lt48uxp",
+  "release": "0.1.0-test.20261004.1",
+  "target": "Ubuntu 24.04 x86-64",
+  "build_type": "Existing Debug build; debug sections removed from distribution copies",
+  "application_version": "0.1.0",
+  "complete_catalogue_entries": 4263,
+  "qualification": "Mixture of hardware-tested samples and source-audited entries; see supported-device list",
+  "source_git_commit": "69fde584cfe1e2d0ad7cefdac781a870c1859c28",
+  "source_worktree": "Includes uncommitted changes; commit alone does not identify this build",
+  "input_binary_sha256": {
+    "labtool48": "f44f565309ceed42906dc3863c224a0f1f1369fc6ab524b6ec1318bbddbf4c64",
+    "labtool48-gtk": "14bea17a2a3feb8ae027cde5981b1bc1ed9f43491edae5d87ec34655a6915a51",
+    "liblabtool48.so.0.1.0": "fe655ca1624ebead23529ff5a6a78d4727ad771038960c8eed17e77bbe54fc45"
+  },
+  "resources_bundled": false,
+  "changes": [
+    "GUI imports recognized Dataman runtime executable names through the native importer",
+    "GUI persists newly imported cache and displays result in database manager",
+    "Bring-your-own import instructions; no original resources distributed"
+  ],
+  "validation": [
+    "Production GTK cache worker: lowercase/uppercase Dataman executable imports and cache verification pass; invalid executable rejected",
+    "No USB accessed during preparation",
+    "File inventory excludes vendor resources; scan of 5426 original resource payloads found no complete matches in packaged binaries"
+  ]
+}

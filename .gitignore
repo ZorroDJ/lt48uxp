@@ -1,0 +1,16 @@
+# Bring-your-own inputs must never enter this distribution repository.
+*.[rR][eE][zZ]
+*.[eE][xX][eE]
+*.[hH][eE][xX]
+*.[bB][iI][nN]
+*.[dD][lL][lL]
+*.[sS][yY][sS]
+*.[cC][aA][bB]
+/private-cache/
+/resources/
+/imports/
+**/objects/
+*.rep
+*.log
+core
+core.*

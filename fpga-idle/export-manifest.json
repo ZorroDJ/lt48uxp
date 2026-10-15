@@ -1,0 +1,22 @@
+{
+  "configuration_device": "xc3030a",
+  "count": 1,
+  "designs": [
+    {
+      "constraints": "constraints/1605d610bc48dc5a3878d0633eaaf3473bc01cedbfcf1cff0409d33ad08f0bab.constraints.json",
+      "constraints_sha256": "e0a393765c12ff1749d25e671959ebca0a40e16728727c7ae26e35a411cf08fe",
+      "module": "xc3030_1605d610bc48dc5a3878d0633eaaf3473bc01cedbfcf1cff0409d33ad08f0bab",
+      "pcf": "pcf/1605d610bc48dc5a3878d0633eaaf3473bc01cedbfcf1cff0409d33ad08f0bab.pcf",
+      "pcf_sha256": "11e277704c99d5f3616c1aea5da544a2b09b48ef8a8f9e5c4d22128972e26fba",
+      "physical_part": "XC3030A-7PC84C",
+      "roundtrip_identical": true,
+      "source_sha256": "1605d610bc48dc5a3878d0633eaaf3473bc01cedbfcf1cff0409d33ad08f0bab",
+      "source_stream": "1605d610bc48dc5a3878d0633eaaf3473bc01cedbfcf1cff0409d33ad08f0bab.bin",
+      "verilog": "verilog/1605d610bc48dc5a3878d0633eaaf3473bc01cedbfcf1cff0409d33ad08f0bab.v",
+      "verilog_sha256": "a95549de0ac083765c08057bdeb74eb6f8b42f9516c922d9497484276852c193"
+    }
+  ],
+  "package": "pc84",
+  "physical_part": "XC3030A-7PC84C",
+  "schema": "xc3000-structural-export-manifest-v1"
+}

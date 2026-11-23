@@ -426,6 +426,7 @@ typedef struct app_widgets {
     GBytes *pic18_preservation_backup;
     size_t selected_device_index;
     int has_selected_device;
+    int pending_last_device;
     size_t pending_device_index;
     int has_pending_device;
     uint8_t selected_programmer_bus;
@@ -1003,6 +1004,7 @@ static void pof_buffer_metadata_clear(app_widgets *widgets) {
 
 static void buffer_edit_discard_undo(app_widgets *widgets);
 static void search_devices(GtkButton *button, gpointer user_data);
+static void start_change_device_browse(app_widgets *widgets);
 static void verify_installation(GtkButton *button, gpointer user_data);
 static void project_status(app_widgets *widgets, const char *message);
 static void commit_device_row(
@@ -4296,6 +4298,67 @@ static void dialog_prepare(GtkFileDialog *dialog) {
     g_free(directory);
 }
 
+static void remember_selected_device(
+    const char *database, const char *vendor, const char *name
+) {
+    char *config = g_build_filename(
+        g_get_user_config_dir(), "labtool48uxp", NULL);
+    char *file = g_build_filename(config, "dialogs.ini", NULL);
+    GKeyFile *settings = g_key_file_new();
+    if (database != NULL && vendor != NULL && name != NULL &&
+        g_mkdir_with_parents(config, 0700) == 0) {
+        g_key_file_load_from_file(settings, file, G_KEY_FILE_NONE, NULL);
+        g_key_file_set_string(
+            settings, "Files", "last-device-database", database);
+        g_key_file_set_string(settings, "Files", "last-device-vendor", vendor);
+        g_key_file_set_string(settings, "Files", "last-device-name", name);
+        g_key_file_save_to_file(settings, file, NULL);
+    }
+    g_key_file_unref(settings);
+    g_free(file);
+    g_free(config);
+}
+
+static gboolean restore_last_device_idle(gpointer data) {
+    app_widgets *widgets = data;
+    char *config = g_build_filename(
+        g_get_user_config_dir(), "labtool48uxp", NULL);
+    char *file = g_build_filename(config, "dialogs.ini", NULL);
+    GKeyFile *settings = g_key_file_new();
+    char *database = NULL;
+    char *vendor = NULL;
+    char *name = NULL;
+    if (widgets->has_selected_device ||
+        widgets->pending_project_device_vendor != NULL ||
+        widgets->installation_entry == NULL)
+        goto done;
+    if (!g_key_file_load_from_file(settings, file, G_KEY_FILE_NONE, NULL))
+        goto done;
+    database = g_key_file_get_string(
+        settings, "Files", "last-device-database", NULL);
+    vendor = g_key_file_get_string(
+        settings, "Files", "last-device-vendor", NULL);
+    name = g_key_file_get_string(settings, "Files", "last-device-name", NULL);
+    if (database == NULL || vendor == NULL || name == NULL)
+        goto done;
+    const char *active = gtk_editable_get_text(
+        GTK_EDITABLE(widgets->installation_entry));
+    if (active == NULL || g_strcmp0(active, database) != 0)
+        goto done;
+    widgets->pending_project_device_vendor = g_steal_pointer(&vendor);
+    widgets->pending_project_device_name = g_steal_pointer(&name);
+    widgets->pending_last_device = 1;
+    start_change_device_browse(widgets);
+done:
+    g_free(database);
+    g_free(vendor);
+    g_free(name);
+    g_key_file_unref(settings);
+    g_free(file);
+    g_free(config);
+    return G_SOURCE_REMOVE;
+}
+
 static const char *operation_availability_label(
     lt48_operation_availability availability
 ) {
@@ -5323,6 +5386,7 @@ static void catalogue_task_finished(
         size_t exact_count = 0u;
         gsize exact_index = 0u;
         size_t item;
+        gboolean restore_last = widgets->pending_last_device;
         GtkWidget *vendor_row;
         GtkWidget *device_row;
         for (item = 0u;
@@ -5372,24 +5436,37 @@ static void catalogue_task_finished(
                     GTK_LIST_BOX_ROW(device_row), widgets);
                 gtk_widget_set_visible(
                     GTK_WIDGET(widgets->device_select_window), FALSE);
-                project_status(
-                    widgets,
-                    "Project restored its exact database-bound device and "
-                    "saved operation state");
+                if (restore_last) {
+                    char *restored = g_strdup_printf(
+                        "Last device restored: %s %s",
+                        widgets->pending_project_device_vendor,
+                        widgets->pending_project_device_name);
+                    project_status(widgets, restored);
+                    g_free(restored);
+                } else
+                    project_status(
+                        widgets,
+                        "Project restored its exact database-bound device and "
+                        "saved operation state");
             } else {
                 project_status(
                     widgets,
-                    "Project device resolution failed after exact catalogue matching");
+                    restore_last ?
+                        "Last device could not be resolved after exact catalogue matching" :
+                        "Project device resolution failed after exact catalogue matching");
                 clear_pending_project_operation_options(widgets);
             }
         } else {
             project_status(
                 widgets,
                 exact_count == 0u ?
-                "Project rejected: its exact saved device is absent from the verified database" :
-                "Project rejected: its saved device identity is ambiguous in the verified database");
+                    (restore_last ? "Last device is absent from the verified database" :
+                        "Project rejected: its exact saved device is absent from the verified database") :
+                    (restore_last ? "Last device identity is ambiguous in the verified database" :
+                        "Project rejected: its saved device identity is ambiguous in the verified database"));
             clear_pending_project_operation_options(widgets);
         }
+        widgets->pending_last_device = 0;
         clear_pending_project_device(widgets);
     }
     g_hash_table_unref(vendors);
@@ -6709,6 +6786,9 @@ static void commit_device_row(GtkListBox *box, GtkListBoxRow *row,
     }
     widgets->selected_device_index = index;
     widgets->has_selected_device = 1;
+    remember_selected_device(
+        lt48_installation_path(widgets->installation),
+        spec.catalogue.vendor, device_name);
     if (spec.definition_kind == LT48_DEVICE_DEFINITION_LOGIC) {
         lt48_rez *fuse_rez = NULL;
         lt48_fuse_code fuse_code;
@@ -21426,6 +21506,7 @@ static void activate(GtkApplication *application, gpointer user_data) {
     gtk_box_append(GTK_BOX(outer), footer);
     gtk_notebook_set_current_page(GTK_NOTEBOOK(notebook), PAGE_DEVICES);
     gtk_window_present(GTK_WINDOW(window));
+    g_idle_add(restore_last_device_idle, widgets);
     refresh_programmers(NULL, widgets);
 }
 

@@ -2,19 +2,19 @@
 
 This is a small fork with some fixes/enhancements of lt48uxp, a 100% Linux ground-up software for the well-known LabTool48. Here are the changes:
 
-    e57a9df — Complete native source and accept AEC 14.40 variant (5 files, +103/−1)
+- e57a9df — Complete native source and accept AEC 14.40 variant (5 files, +103/−1)
 
 Restores the missing core.c and exempts it from the core-dump pattern; recognizes the alternative AEC 14.40 EXE; accepts the FX2 AEC 1.14 firmware; computes the source profile once per installation.
 
-    c2d3167 — Remember file dialog directory and clarify read preparation (1 file, +75/−1)
+- c2d3167 — Remember file dialog directory and clarify read preparation (1 file, +75/−1)
 
 Saves the last dialog directory to dialogs.ini with a fallback to the home directory; changes the label of the read preparation phase.
 
-    b9c2d36 — Clarify prepared read status wording (1 file, +1/−1)
+- b9c2d36 — Clarify prepared read status wording (1 file, +1/−1)
 
 Rewords the message in "READY and plan prepared; no USB opened yet".
 
-    479c573 — Remember and restore the last selected device (1 file, +88/−7)
+- 479c573 — Remember and restore the last selected device (1 file, +88/−7)
 
 Saves database/vendor/chip name to dialogs.ini and re-selects it on restart only if unambiguous.
 

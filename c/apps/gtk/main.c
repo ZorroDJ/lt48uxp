@@ -6902,7 +6902,7 @@ static void read_prepare_worker(
         g_strlcpy(result->confirmation, confirmation_hex,
                   sizeof(result->confirmation));
         result->message = g_strdup_printf(
-            "READY — plan prepared; no USB opened yet\n"
+            "READY and plan prepared; no USB opened yet\n"
             "%s · 0x%x + %u bytes · target %03u:%03u\n"
             "%zu transactions · %zu chunks · output %s\n"
             "Plan: %s\nManifest: %s\nConfirmation: %s\nReport: %s",

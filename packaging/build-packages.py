@@ -36,7 +36,7 @@ with tempfile.TemporaryDirectory(prefix='lt48-pack-') as temp:
  (control/'control').write_text(f'Package: lt48uxp\nVersion: {DEB_VERSION}\nSection: electronics\nPriority: optional\nArchitecture: {arch}\nMaintainer: ashurbanipal-labs <noreply@users.noreply.github.com>\nDepends: {depends}\nInstalled-Size: {sum(p.stat().st_size for p in usr.rglob("*") if p.is_file())//1024}\nDescription: Independent LabTool-48UXP C and GTK application\n Vendor databases and USB firmware must be supplied separately.\n')
  for name,body in [('postinst','if command -v ldconfig >/dev/null; then ldconfig; fi\nif command -v udevadm >/dev/null; then udevadm control --reload-rules || true; fi\n'),('postrm','if command -v ldconfig >/dev/null; then ldconfig; fi\nif command -v udevadm >/dev/null; then udevadm control --reload-rules || true; fi\n')]:
   p=control/name;p.write_text('#!/bin/sh\nset -e\n'+body+'exit 0\n');p.chmod(0o755)
- deb=out/f'lt48uxp_{DEB_VERSION}_{arch}.deb'
+ deb=out/f'lt48uxp_{VERSION}_{arch}.deb'
  run('dpkg-deb','--root-owner-group','--build',stage,deb)
  portable=temp/'lt48uxp';shutil.copytree(usr,portable,symlinks=True)
  for name,binary in [('start-lt48uxp','labtool48-gtk'),('lt48-cli','labtool48')]:

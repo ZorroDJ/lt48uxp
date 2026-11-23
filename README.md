@@ -12,10 +12,10 @@ release. Packages are available under [Releases](https://github.com/ashurbanipal
 
 ## Install the Ubuntu package
 
-Download `lt48uxp_0.1.0~test.20261123.1_amd64.deb`, then:
+Download `lt48uxp_0.1.0-test.20261123.1_amd64.deb`, then:
 
 ```bash
-sudo apt install ./lt48uxp_0.1.0~test.20261123.1_amd64.deb
+sudo apt install ./lt48uxp_0.1.0-test.20261123.1_amd64.deb
 ```
 
 Launch **LabTool-48UXP** from the application menu, or run `labtool48-gtk`.

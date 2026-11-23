@@ -336,7 +336,12 @@ struct lt48_installation {
     struct { const lt48_new_device_record *record; size_t donor; } *new_devices;
     size_t new_count;
     const lt48_new_device_record **corrections;
+    const char *source_profile;
 };
+
+static const char *installation_compute_source_profile(
+    const lt48_installation *installation
+);
 
 static const char *installation_definition_stem(
     const lt48_installation *installation, uint16_t device_class
@@ -529,6 +534,8 @@ lt48_status lt48_installation_open(
     status=installation_load_new_library(installation);
     if(status!=LT48_OK){lt48_installation_close(installation);return status;}
     *out_installation = installation;
+    installation->source_profile =
+        installation_compute_source_profile(installation);
     return LT48_OK;
 }
 
@@ -536,7 +543,9 @@ size_t lt48_installation_device_count(const lt48_installation *installation) {
     return installation ? installation->device_count+installation->new_count : 0;
 }
 
-const char *lt48_installation_source_profile(const lt48_installation *installation) {
+static const char *installation_compute_source_profile(
+    const lt48_installation *installation
+) {
     unsigned char digest[LT48_SHA256_SIZE];
     char hex[LT48_SHA256_SIZE * 2u + 1u];
     if (!installation || lt48_rez_sha256(installation->catalogue, digest) != LT48_OK)
@@ -552,6 +561,12 @@ const char *lt48_installation_source_profile(const lt48_installation *installati
     if (!strcmp(hex, "b1bc1a94c6f9f455da64b14573b9a2345cea76fea05f51976fc0df6fb7188b4c"))
         return "AEC 7.60";
     return "unrecognized";
+}
+
+const char *lt48_installation_source_profile(const lt48_installation *installation) {
+    if (installation == NULL || installation->source_profile == NULL)
+        return "unrecognized";
+    return installation->source_profile;
 }
 
 const char *lt48_installation_path(const lt48_installation *installation) {

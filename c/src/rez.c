@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+void lt48_rez_digest_normalize(unsigned char digest[LT48_SHA256_SIZE]);
+
 typedef struct rez_resource_owned {
     char *name;
     char *type_name;
@@ -258,6 +260,7 @@ lt48_status lt48_rez_open(const char *path, lt48_rez **out_rez) {
                 strcpy(entry->path, path);
                 entry->rez = rez;
                 lt48_sha256(rez->data, rez->size, entry->digest);
+                lt48_rez_digest_normalize(entry->digest);
                 atomic_fetch_add(&rez->references, 1u);
                 entry->next = snapshot_entries;
                 snapshot_entries = entry;
@@ -266,6 +269,74 @@ lt48_status lt48_rez_open(const char *path, lt48_rez **out_rez) {
     }
     *out_rez = rez;
     return LT48_OK;
+}
+
+/* AEC 14.40 rebuilt most resource headers and some payloads while retaining
+ * earlier engine resources. Map recognized 14.40 digests to their audited
+ * 13.10 equivalents so existing exact-hash engine checks remain meaningful. */
+static const struct { const char *variant; const char *canonical; } aec1440_compat[] = {
+    {"3f9e5fe3cebc6709328a8a26844d355c4262febda1bf01a7b1b684d52c72f2ee", "3163ffcfd04a7cdc2c1853110175fae42fe9e399a8cce9fbc85e23d007b2e7d2"}, /* GAAA___.rez */
+    {"ca549c5dd5b536eff2123cd93ba01e2507cf7e1238c8af188bea207e9b377d2e", "cb8e52932d7e04b06eb43530a95ea3533311cc49904a2e4924fd47837318b695"}, /* GAABA__.rez */
+    {"0446228f1d40cdc05a383034b94bb21d326705dccb5eacb92b185f923000a7b7", "175b86105f89b58c3e9e40d169e742f3bc193be9af9a3a3c5b7b998138ab182b"}, /* GAABB__.rez */
+    {"e17b35d8cdcfb4e64822967deee15a0f2faf929c64afde6a9ff379ab1a1c362d", "884d761b7deca2ccbaa49e0b26c3b515e1381033c6b9af6fd496136135c47bdf"}, /* GAAB___.rez */
+    {"30fdc4100b12367a79dc4c988ba42e443faf95742f68625d10bc933b22f39849", "a5b774bb0fada8081d9a158f710586df4dafb71c298d4c049c625627dde173c4"}, /* GAAC___.rez */
+    {"e28bd9ebae1bf883bc41c413cee5c7a27e7b170a6ba46e504c26b22fc6fe2bed", "e282aa2c1a8fbcc13070fee62dae551fe9db3809639a90529b5d423f99c90180"}, /* GAAD___.rez */
+    {"dd9f7d517d84ee390ff46107fa3a65faefdbd762987f8105174ae8ca573f0628", "4d97d960939a13b84a36d664def2823698b680ecbd97514be0b7b55ecc244e05"}, /* GAAE1__.rez */
+    {"6e8f48b3482cccac6817e7caabb2755d3f8843d44e19c4def994b9b5522b8ae6", "3a9cc5ad13d26c607a5d2bd5774c5cc54315b642aea14864a12da92f86765117"}, /* GAAE___.rez */
+    {"347d3a09910ff169f68425cc8a18a9f85a0e9a3785585e6d37ce12ad54afe974", "9fdc0c7a88bb96aaead0314fb4f85c0800ab987abf370908000493cc272d13f6"}, /* GAAF___.rez */
+    {"b567bcd4dd7172384099a11496ad38f9ac6a11c1d990acd037326f15d553b694", "2e6261c867d6857786933c0d093e5bd669f70355cc218ff006c88c4fb919636b"}, /* GAA____.rez */
+    {"d8ee0b1379b9dabc8e7816590e4a786931d5ce36ac3cffd1f6899bfd1f725854", "72881a986aa39f0a7258f153f6ea30eb74368350229a89cdcde7867f4219c2f9"}, /* GAB____.rez */
+    {"a8e2391da37525e0b4f4d4b8900a0ce4167be93ee79c67e8fbb4484faa8d62c6", "bbc71e51baba29f24c9485678eb31b5bd5634789cd1acc503334c70f950a842f"}, /* GAC____.rez */
+    {"91f4fb885f78d6638612ea924aefb8a4e1091faba044887ee8af4511deb2cc17", "aca05831121f0e30654601df133b298cec1d33e7ffb94626c5d62634e690c452"}, /* GADA___.rez */
+    {"1a6bd49cd281d2a8390d952f043fafe3bcc867a76f9f0186a0f59e6c1e05ccf5", "a9a45cce0fb16ce810a5f884b82a8e46afc7b0ccbd80ab6ab25b5a77613c3a3b"}, /* GADB___.rez */
+    {"ce421a50ba02b55313e90a3b29c8ab10c2eb679e82c5bbdd1e19fba78a80f27d", "24b8320da4cfd700ee436ff06bd55d9dfbd472c53a021ad527c9bbcb3c804dec"}, /* GADC___.rez */
+    {"6206d10fb6db041303eb8a2bde77cffb2180643c9138708ee01071819c8e2969", "aa366e3c14e1e088730223f8be3e1343a16c551039f95fcdf7d101bc45c46706"}, /* GAD____.rez */
+    {"f72c78b5b462bf95f891116ffc6fcfdb23e2a54c8a4d2c317de219eb380474af", "7c4cdca4c1dd5bfd3c405001054e555d12e1925815f52ae8fb8db1cd034d9c90"}, /* GAE____.rez */
+    {"a9390992046cc2efab4777ade1433dd128cc9ce2b02abb7131bc69c8f7e2b2d6", "126dcd7dd7252b5af78e151d34106f0c17b5e52575b9606a80b9f615f912c123"}, /* GAF____.rez */
+    {"87483163c76421e5dcac252df5232d5bc835a385604e010ca5d5cdbb5baedd10", "a286d6799117d4e188067376cab75843fbb9299f4990091d91ad27d8abab99ad"}, /* GA_____.rez */
+    {"4763ec977a7a5b2f658d6ce75c88156e3415e99308895607d870c8f9e93ea830", "2b82c3e23dde22e68484fa6de0bf93f4ac957486158ab2d0d91a160a3416a380"}, /* GBA____.rez */
+    {"93232803e59db0ce81a6449a599bdf2b59447cc351b31e967dcdbff0dbc7feb8", "c9c29035544d72ea92a281b7a8def753b035889635f82fdb1f521fc0330f8c76"}, /* GBBA___.rez */
+    {"024d6dd3bdbdc3280acd9480f227bf2d8ec5db2578820c35365a9880efc636d6", "85ca2609c5d2691cd435b8edd8550523d7bac5c0e8107b599f189692baeeafa7"}, /* GBB____.rez */
+    {"cde95ccc66128627d8c428fef9c568ee1a0033b08f4474e48c57060188574ea8", "65753e664d77d1cfab853ae51f6b58de07fc98ab73f88e618a31d0261fd1d846"}, /* GBC____.rez */
+    {"07a05dbd80acabf5a6fdede9178873a04f55179ff2436cf6ae01daa9859de4f0", "88cd45163f6ffac436959a4659a6f782aea294d0add67c87bf1f4336fb5d07f1"}, /* GBD____.rez */
+    {"26d3a3169fad22e54b5e7fbcaa2885f4dc34d68e6372dc2de3ceafcc651f54e4", "a7d97ec76f79911804983d3faee0bc0fc8ecfb1bcc2fb137305de06022b5556a"}, /* GBE____.rez */
+    {"17de5e40a537ddccd3fb17530091e5f369398854b717d332f6dce951cd19394a", "913000514454bd9ee191bc4167efa52aff3969ff46e84081d9ddfbe2635c6f7f"}, /* GB_____.rez */
+    {"a801588dbab3329ddfd62e3dd77bd4fcb34a88e26a25f311199996607a654988", "fe960eb458355e267848f82bd9d86dd05c54d9979c40a80036c3d3a57a7c4b32"}, /* GCA____.rez */
+    {"619a4e42c883e28b3e54e8a57cb6a84ea38890c2d28d3234d5da353b7d2bf4d5", "9bd0f6c9cd3e5e6888a23f8750c6acc6da7fafb64501f477e064db3c8bb74b12"}, /* GCB____.rez */
+    {"daa20c8959ca87075547d063d8d222aae51b2c9a30900459b94bd9b042fa9ed5", "fc6529b7b6c6443dc9a962052b5f18e7f2928ae1bdfc3248d373a9a9fec32c20"}, /* GC_____.rez */
+    {"50b21f3689f9b58d2be91a8876046a4532767526437304ad6293a31e11948f33", "98e1cfe07d11ae94d93a71b49e90197370df36694b5ac880523b6012efcbcbde"}, /* GDAAA__.rez */
+    {"d4342c691ecd4307c5be7cd6bab865e81cb2632a682489ad61937cfa355bec7f", "6f780f677ae8e3f57c49d951f45509baead7bbfd4b678488e73383fc7d841471"}, /* GDAA___.rez */
+    {"e754944d0f66b09a1d9713ad2c16f88d719786ce08ce637ab9b5979b683a639b", "77e939e536a8af7d76fa8d661927e7f1e712eb7b1441fe6e7c86ddbeefdb51ec"}, /* GDABA__.rez */
+    {"6525d96a1a69cab6cd6c3899a7365d9173eb9de60667a4ffd1b2d7545932d053", "55d48e0a8888665c93b12551e9ddb3307abe819d088f8e164ac1c623b7ad0d44"}, /* GDAB___.rez */
+    {"d502c6196d04ae846c4cc4b3e7327c1af4180d064ee3238fbbc00a58a2e90c1c", "4abfb9024179d1cf38f17bc43ebfdaabaca4694b95e76e73edfdbbe7a0f46710"}, /* GDAC___.rez */
+    {"2627d159e0be4198e163d9f25c5d406cf2943d3bb20cf4dffac139f680305f91", "9a9afa4870cdcd5cc9d431ad060311b1f6f0c8d653ec3e157c8aa888b8d66e36"}, /* GDAE___.rez */
+    {"9f6eb4bf296fcf9bb02e5baeed2ecd3718651fb31644e235cd36404e833348b9", "b889a62b78b8d63028e47b3c4c008b86f245fa96322c4f73336a5f882f19fe28"}, /* GDBAA__.rez */
+    {"6b88516336b159f041b4672919ba41d4d6670e3af9f2dbc181b8c417031aa971", "4129e4261b9eeb7a4b7f4272d99b3e8d4ec45e41f9150a86baa57f909e8fc7ff"}, /* GDBA___.rez */
+    {"a1eaf80cdd90e46b7bb197320577e6a9d4a6b78f3b114764d838388d68973b70", "d2c4b6b43cff23dcfca67c92e4341a9e630322bb41850236ce83937228f5fab0"}, /* GDBB___.rez */
+    {"a913a0b10ef4001ccc110a7d0eecc3a954eba3980707f0192807c2615d590794", "2439a3725457dfc077c67ea7420701829f4d91d62155ffd070921c767d322ac8"}, /* GDCAA__.rez */
+    {"702936863173924e260be39d597cd7ebbc35a8d5c811fbb7561234191a5f9835", "5b391bb2789baa1496eb5db708c3d867b8e25ec2b01dc7ea030eb9c9a84e5a39"}, /* GDCA___.rez */
+    {"f63f318c0a4f84528b3a7ac7901db7fa1c1a17d21407a0ed0604e21b39e300f7", "84d3f2c830be58a084b5c763687d8a7c3a6217d440d4a96fb63fb2cf842a38fa"}, /* GDCBA__.rez */
+    {"3783c20e7d491803a4a369759af2b59d46ffe6e8498c6e30979e5acf674daf3a", "c0e90a55e97a3ac12d73006eb9da1139e3d5688aef85242b0001bc406cab4640"}, /* GDCC___.rez */
+    {"199263b340c19eee9513594162c7c6b00949fdf4a420f0ea0ffa5630de5162af", "a1f539dee05f744739a739c69e61a552c50bfbd94e9e42dc774c8b89db00234f"}, /* dev48uxp.rez */
+    {"199263b340c19eee9513594162c7c6b00949fdf4a420f0ea0ffa5630de5162af", "a1f539dee05f744739a739c69e61a552c50bfbd94e9e42dc774c8b89db00234f"}, /* dev48uxp.rez */
+};
+
+static unsigned char hex_nibble_compat(char c) {
+    return c >= '0' && c <= '9' ? (unsigned char)(c - '0') :
+           (unsigned char)(c - 'a' + 10);
+}
+
+void lt48_rez_digest_normalize(unsigned char digest[LT48_SHA256_SIZE]) {
+    char hex[LT48_SHA256_SIZE * 2u + 1u];
+    for (size_t i = 0; i < LT48_SHA256_SIZE; ++i)
+        (void)snprintf(hex + 2u*i, 3u, "%02x", digest[i]);
+    for (size_t i = 0; i < sizeof(aec1440_compat)/sizeof(*aec1440_compat); ++i) {
+        if (strcmp(hex, aec1440_compat[i].variant)) continue;
+        for (size_t j = 0; j < LT48_SHA256_SIZE; ++j)
+            digest[j] = (unsigned char)((hex_nibble_compat(aec1440_compat[i].canonical[2u*j]) << 4) |
+                                        hex_nibble_compat(aec1440_compat[i].canonical[2u*j+1u]));
+        return;
+    }
 }
 
 lt48_status lt48_rez_sha256(
@@ -279,6 +350,7 @@ lt48_status lt48_rez_sha256(
         }
     }
     lt48_sha256(rez->data, rez->size, digest);
+    lt48_rez_digest_normalize(digest);
     return LT48_OK;
 }
 

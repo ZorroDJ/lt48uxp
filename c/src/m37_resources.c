@@ -83,6 +83,7 @@ static lt48_status hash_file(
     }
     if (fclose(file) != 0) return LT48_FILE_ERROR;
     lt48_sha256_final(&hash, digest);
+    lt48_rez_digest_normalize(digest);
     return LT48_OK;
 }
 

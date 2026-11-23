@@ -1,6 +1,6 @@
 # LT48UXP with some fixes
 
-This is a small fork with some fixes/enhancements of lt48uxp, a 100% Linux ground-up software for the well-known LabTool48. Here are the changes:
+This is a small fork with some fixes/enhancements of [lt48uxp](https://github.com/ashurbanipal-labs/lt48uxp) by vtp, a 100% Linux ground-up software for the well-known LabTool48. Here are the changes:
 
 - e57a9df - Complete native source and accept AEC 14.40 variant (5 files, +103/−1)
 

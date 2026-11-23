@@ -17,7 +17,9 @@ for example `~/LabTool-resources/Dataman-13.10/`. That directory must contain:
 - `dev48uxp.rez`, the device catalogue.
 - All matching `.rez` definition files from that same installation.
 - The recognized `WDATA48UXP.exe` or `WDATA48UXP.EXE` from Dataman 13.10.
-  Supported AEC imports use their recognized `WLT48UXP.exe` instead.
+  Supported AEC imports use their recognized `WLT48UXP.exe` instead (AEC 13.10,
+  14.30 and audited 14.40 variants). AEC 14.40 resources whose digests match an
+  audited 13.10 engine resource are mapped to that exact engine.
 
 For reference, the supported Dataman executable's SHA-256 is:
 

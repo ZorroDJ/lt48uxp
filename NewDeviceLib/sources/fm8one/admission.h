@@ -1,0 +1,1 @@
+#define LT48_FM8ONE_ADMITTED 1

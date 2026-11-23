@@ -1,0 +1,1 @@
+#define LT48_HC705_JJSRPL_STAGE 10

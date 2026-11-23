@@ -1,0 +1,1 @@
+#define LT48_TMS87TWO_ADMITTED 1

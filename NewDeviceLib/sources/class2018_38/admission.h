@@ -1,0 +1,1 @@
+#define LT48_CL38_STAGE 2

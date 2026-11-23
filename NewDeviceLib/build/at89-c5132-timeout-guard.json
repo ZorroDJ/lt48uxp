@@ -1,0 +1,6 @@
+{
+  "format": "command-recipe-1",
+  "working_directory": "project-root",
+  "argv": ["cc", "-std=c11", "-Wall", "-Wextra", "-Werror", "-Ic/include", "c/tests/test_at89_c5132_guard.c", "-Lbuild-c", "-llabtool48", "-o", "build-c/test-at89-c5132-guard"],
+  "note": "Builds the offline transformer test. Requires the exact user-supplied W106 applet. No vendor firmware distributed. The transformed RAM image reserves 4100 through 4208, with scratch at 41FE and a sticky timeout latch at 41FF. Experimental; complete C5132 owner and GUI admission remain unfinished."
+}

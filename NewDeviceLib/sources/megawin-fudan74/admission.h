@@ -1,0 +1,1 @@
+#define LT48_MF74_ADMITTED 1

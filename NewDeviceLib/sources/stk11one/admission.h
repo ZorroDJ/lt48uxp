@@ -1,0 +1,1 @@
+#define STK11ONE_ADMITTED 1

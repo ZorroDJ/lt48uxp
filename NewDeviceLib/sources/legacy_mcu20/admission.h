@@ -1,0 +1,1 @@
+#define LT48_LM20_STAGE 2

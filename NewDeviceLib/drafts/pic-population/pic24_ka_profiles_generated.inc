@@ -1,0 +1,19 @@
+/* KA16 candidate metadata; no operation admission. Source image-policy.json. */
+static const ka_profile ka_profiles[]={
+ {"Microchip:PIC24F08KA101 *20SO",2816,1,0,20,404,203},
+ {"Microchip:PIC24F08KA101 *20SS",2816,1,0,20,404,203},
+ {"Microchip:PIC24F08KA102 *28SO",2816,1,0,28,405,204},
+ {"Microchip:PIC24F08KA102 *28SS",2816,1,0,28,405,204},
+ {"Microchip:PIC24F16KA101 *20SO",5632,1,0,20,404,203},
+ {"Microchip:PIC24F16KA101 *20SS",5632,1,0,20,404,203},
+ {"Microchip:PIC24F16KA102 *28SO",5632,1,0,28,405,204},
+ {"Microchip:PIC24F16KA102 *28SS",5632,1,0,28,405,204},
+ {"Microchip:PIC24F32KA301 *20SO",11264,3,0,20,404,203},
+ {"Microchip:PIC24F32KA301 *20SS",11264,3,0,20,404,203},
+ {"Microchip:PIC24F32KA302 *28SO",11264,3,0,28,405,204},
+ {"Microchip:PIC24F32KA302 *28SS",11264,3,0,28,405,204},
+ {"Microchip:PIC24FV32KA301 *20SO",11264,3,1,20,404,203},
+ {"Microchip:PIC24FV32KA301 *20SS",11264,3,1,20,404,203},
+ {"Microchip:PIC24FV32KA302 *28SO",11264,3,1,28,405,204},
+ {"Microchip:PIC24FV32KA302 *28SS",11264,3,1,28,405,204},
+};

@@ -1,0 +1,1 @@
+#define LT48_EMTC18_STAGE 3

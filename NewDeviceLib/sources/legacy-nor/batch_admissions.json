@@ -1,0 +1,27 @@
+{
+  "header_sha256": "1397343412f74f45581bd942e667bf384377c2d94521bdc1ac2f010f8a1de667",
+  "levels": {
+    "eon080_source_audited": {
+      "label": "EON EN29F080 TSOP40 original software ID; native/app/FPGA/GUI audit; hardware pending",
+      "report": "docs/audit-qualification/EON_EN29F080.md"
+    },
+    "hynix_080_authored_audited": {
+      "label": "Hyundai(Hynix):HY29F080T *40TS authored OE setup; native/app/FPGA/GUI audit; hardware pending",
+      "report": "docs/audit-qualification/HYNIX_HY29F080T.md"
+    },
+    "mx080ps_authored_audited": {
+      "label": "Macronix MX29F080 PSOP44 authored OE setup; native/app/FPGA/GUI audit; hardware pending",
+      "report": "docs/audit-qualification/MACRONIX_MX29F080_PS.md"
+    },
+    "mx080ts_authored_audited": {
+      "label": "Macronix:MX29F080 *40TS authored OE setup; native/app/FPGA/GUI audit; hardware pending",
+      "report": "docs/audit-qualification/MACRONIX_MX29F080_TS_PROGRESS.md"
+    },
+    "w39f010_software_id_audited": {
+      "label": "W39F010 authored software identification; native/app/FPGA/GUI audit; hardware pending",
+      "report": "docs/audit-qualification/W39F010_SOFTWARE_ID.md"
+    }
+  },
+  "manifest_sha256": "fac625913eb8ba69b91c32446d3f078b005091c53e3bb8c3445e8d89da692e51",
+  "schema": 1
+}

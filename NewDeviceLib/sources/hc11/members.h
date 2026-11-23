@@ -1,0 +1,27 @@
+/* Exact source names and tuple bindings; never infer support from a prefix. */
+static const struct hc11_member { const char *vendor,*name; unsigned definition,family,pinmap,stage; } hc11_members[]={
+{"Freescale","MC68HC11A1",0xc0,113,79,4},
+{"Motorola","MC68HC11A1",0xc0,113,79,4},
+{"Freescale","MC68HC11A8",0xc1,114,79,4},
+{"Motorola","MC68HC11A8",0xc1,114,79,4},
+{"Freescale","MC68HC11A1 @52",0xbf,112,77,14},
+{"Freescale","MC68HC11E1 @52",0xbf,112,77,14},
+{"Motorola","MC68HC11A1 @52",0xbf,112,77,14},
+{"Motorola","MC68HC11E1 @52",0xbf,112,77,14},
+{"Freescale","MC68HC11A8 @52",0xc2,115,77,14},
+{"Motorola","MC68HC11A8 @52",0xc2,115,77,14},
+{"Freescale","MC68HC11E9 @52",0xc3,116,77,14},
+{"Freescale","MC68HC11L6 @52",0xc3,116,77,14},
+{"Motorola","MC68HC11E9 @52",0xc3,116,77,14},
+{"Motorola","MC68HC11L6 @52",0xc3,116,77,14},
+{"Freescale","MC68HC811E2",0xca,123,79,18},
+{"Motorola","MC68HC811E2",0xca,123,79,18},
+{"Freescale","MC68HC811E2 @52",0xc9,122,77,18},
+{"Motorola","MC68HC811E2 @52",0xc9,122,77,18},
+{"Freescale","MC68HC11F1 @68",0xc8,121,78,24},
+{"Motorola","MC68HC11F1 @68",0xc8,121,78,24},
+{"Freescale","MC68HC11K1 @84",0xc4,117,77,24},
+{"Freescale","MC68HC11K4 @84",0xc4,117,77,24},
+{"Motorola","MC68HC11K1 @84",0xc4,117,77,24},
+{"Motorola","MC68HC11K4 @84",0xc4,117,77,24}
+};

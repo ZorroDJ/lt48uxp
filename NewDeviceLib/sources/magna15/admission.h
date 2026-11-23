@@ -1,0 +1,1 @@
+#define LT48_MG15_ADMITTED 1

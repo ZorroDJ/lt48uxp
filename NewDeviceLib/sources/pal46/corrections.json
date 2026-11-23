@@ -1,0 +1,246 @@
+{
+  "schema": 1,
+  "status": "authored-specification; admission requires stage4 qualification receipt",
+  "source_sha256": "85ca2609c5d2691cd435b8edd8550523d7bac5c0e8107b599f189692baeeafa7",
+  "logical_convention": "0=intact;1=blown;positive-output capture equals blown bit,negative-output capture is its complement",
+  "models": [
+    {
+      "id": "pal12-six",
+      "definitions": [
+        3,
+        4
+      ],
+      "pins": 20,
+      "inputs": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        12,
+        13,
+        16,
+        17,
+        20,
+        21,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "terms": [
+        8,
+        9,
+        10,
+        11,
+        16,
+        17,
+        24,
+        25,
+        32,
+        33,
+        40,
+        41,
+        48,
+        49,
+        50,
+        51
+      ],
+      "split": 32
+    },
+    {
+      "id": "pal14-four",
+      "definitions": [
+        5,
+        6
+      ],
+      "pins": 20,
+      "inputs": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        16,
+        17,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "terms": [
+        16,
+        17,
+        18,
+        19,
+        24,
+        25,
+        26,
+        27,
+        32,
+        33,
+        34,
+        35,
+        40,
+        41,
+        42,
+        43
+      ],
+      "split": 32
+    },
+    {
+      "id": "pal18-four",
+      "definitions": [
+        13
+      ],
+      "pins": 24,
+      "inputs": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        20,
+        21,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39
+      ],
+      "terms": [
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        32,
+        33,
+        34,
+        35,
+        40,
+        41,
+        42,
+        43,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53
+      ],
+      "split": 40
+    }
+  ],
+  "positive_definitions": [
+    2,
+    4,
+    6,
+    8
+  ],
+  "unchanged": [
+    "original pin/control tables, input/output bank addressing, capture transport, host traversal and nominal startup",
+    "verified idle FPGA and original staged high-rail shutdown"
+  ],
+  "corrections": [
+    "F2/F3/F8 logical fuse coordinates derived from MMI physical terms and independently checked JEDEC row/column order",
+    "H blank0, Program readback removes the source-only erroneous XOR; normal LOAD remains positive; mode11 host keeps masked blank0 expectation",
+    "Program VCC high per output pulse, nominal return and off delay; full-array nominal/high/low verify with reinitialization between passes",
+    "Secure at6V VCC with two18.5V/40us pulses, preverify and post-protection failure checks at5.5V/4.5V"
+  ],
+  "electrical": {
+    "program_vcc": 11.75,
+    "program_pulse_us": 20,
+    "off_delay_us": 100,
+    "nominal_verify_v": 5,
+    "high_verify_v": 5.5,
+    "low_verify_v": 4.5,
+    "security_vcc_v": 6,
+    "security_output_v": 18.5,
+    "security_pulse_us": 40,
+    "security_off_delay_us": 100
+  },
+  "references": [
+    {
+      "document": "1983 MMI PAL Handbook 3rd edition",
+      "pdf_pages": [
+        44,
+        45,
+        46
+      ],
+      "printed_pages": [
+        "3-19",
+        "3-20",
+        "3-21"
+      ],
+      "url": "https://ftpmirror.your.org/pub/misc/bitsavers/components/mmi/_dataBooks/1983_MMI_PAL_Handbook_3ed.pdf"
+    },
+    {
+      "document": "1981 MMI Bipolar LSI Databook",
+      "pdf_pages": [
+        100,
+        105,
+        106,
+        107,
+        111,
+        125,
+        130
+      ]
+    },
+    {
+      "document": "MAME authored jedutil row/column tables",
+      "url": "https://github.com/mamedev/mame/blob/master/src/tools/jedutil.cpp"
+    }
+  ]
+}

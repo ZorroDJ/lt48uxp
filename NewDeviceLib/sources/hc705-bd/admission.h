@@ -1,0 +1,1 @@
+#define LT48_HC705_BD_STAGE 10

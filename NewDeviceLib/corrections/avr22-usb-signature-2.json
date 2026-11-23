@@ -1,0 +1,32 @@
+{
+  "id": "avr22.usb.signature.2",
+  "version": "1.0.0",
+  "kind": "correction",
+  "status": "audited",
+  "manufacturer": "Atmel",
+  "part": "AT90USB1286 @64QFN",
+  "base": {
+    "key": "Atmel:AT90USB1286 @64QFN",
+    "file": "GAB____.rez",
+    "sha256": "72881a986aa39f0a7258f153f6ea30eb74368350229a89cdcde7867f4219c2f9",
+    "class": 2010,
+    "definition": 200,
+    "family": 159,
+    "pinmap": 65,
+    "pins": 32,
+    "capacity_bytes": 135168
+  },
+  "overrides": {},
+  "variables": [
+    {
+      "id": 40,
+      "kind": 2,
+      "expected": 129,
+      "value": 130
+    }
+  ],
+  "resources": [],
+  "evidence": [
+    "source.avr-atmega.README-md"
+  ]
+}

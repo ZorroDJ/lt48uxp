@@ -1,0 +1,30 @@
+{
+  "id": "xicor.x24641-5v",
+  "version": "1.0.0",
+  "kind": "derived",
+  "status": "hardware-qualified",
+  "manufacturer": "Xicor",
+  "part": "X24641 (5V)",
+  "base": {
+    "key": "ST:M24C64",
+    "file": "GA_____.rez",
+    "sha256": "a286d6799117d4e188067376cab75843fbb9299f4990091d91ad27d8abab99ad",
+    "class": 2000,
+    "definition": 166,
+    "family": 66,
+    "pinmap": 0,
+    "pins": 8,
+    "capacity_bytes": 8192
+  },
+  "overrides": {
+    "device_type": 65532,
+    "definition": 65532,
+    "manufacturer_id": 0,
+    "device_id": 0
+  },
+  "variables": [],
+  "resources": [],
+  "evidence": [
+    "evidence.x24641"
+  ]
+}

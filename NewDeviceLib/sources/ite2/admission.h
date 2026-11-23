@@ -1,0 +1,1 @@
+#define LT48_ITE2_ADMITTED 1

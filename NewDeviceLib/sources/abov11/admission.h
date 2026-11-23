@@ -1,0 +1,1 @@
+#define LT48_AB11_ADMITTED 1

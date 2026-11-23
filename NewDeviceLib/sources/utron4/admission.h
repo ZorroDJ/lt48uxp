@@ -1,0 +1,1 @@
+#define LT48_UTRON4_ADMITTED 1

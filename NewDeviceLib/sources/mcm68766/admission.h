@@ -1,0 +1,1 @@
+#define LT48_MCM68766_ADMITTED 1

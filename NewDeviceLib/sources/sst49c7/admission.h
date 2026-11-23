@@ -1,0 +1,1 @@
+#define LT48_SST49C7_ADMITTED 7

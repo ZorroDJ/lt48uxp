@@ -1,0 +1,26 @@
+#ifndef LT48_PIC24_KA_BACKEND_H
+#define LT48_PIC24_KA_BACKEND_H
+#include "pic24_ka_resources.h"
+typedef struct lt48_pic24_ka_backend lt48_pic24_ka_backend;
+typedef struct {
+ lt48_status status,cleanup_status,indication_status;
+ unsigned stages_completed,configuration_readback_confirmed,protection_write_completed;
+ uint32_t mismatch_offset,expected,observed;
+ lt48_pic_source_operation_result last;
+} lt48_pic24_ka_backend_result;
+/* Candidate complete operation owner over exact BYO resources. Every low-level
+ * transaction owns fresh source preparation/startup and unconditional cleanup.
+ * Program erases/writes both user arrays,verifies and independently reads them,
+ * then writes/reads ordinary configuration and applies requested protection.
+ * Output images commit only after complete success. No public/GUI admission. */
+lt48_status lt48_pic24_ka_backend_open(const char *,const char *,lt48_pic24_ka_backend **);
+void lt48_pic24_ka_backend_close(lt48_pic24_ka_backend *);
+size_t lt48_pic24_ka_backend_capacity(const lt48_pic24_ka_backend *);
+lt48_status lt48_pic24_ka_backend_configuration_get(const lt48_pic24_ka_backend *,
+ const unsigned char *,size_t,lt48_runtime_configuration_value *,size_t,size_t *);
+lt48_status lt48_pic24_ka_backend_configuration_set(const lt48_pic24_ka_backend *,
+ unsigned char *,size_t,const lt48_runtime_configuration_value *,size_t);
+lt48_status lt48_pic24_ka_backend_execute(const lt48_pic24_ka_backend *,
+ const lt48_protocol_transport *,void *,lt48_operation_kind,unsigned char *,size_t,
+ uint32_t,const lt48_pic_source_startup_plan *,lt48_pic24_ka_backend_result *);
+#endif

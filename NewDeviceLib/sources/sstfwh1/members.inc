@@ -1,0 +1,1 @@
+static int sstfwh1_binding(const lt48_catalogue_entry*e){return e&&e->device_class==2044&&e->device_type==40&&e->manufacturer_id==191&&e->device_id==76&&!strcmp(e->vendor,"SST")&&e->device_name_length==strlen("49LF160C *32PLCC")&&!memcmp(e->device_name,"49LF160C *32PLCC",e->device_name_length);}

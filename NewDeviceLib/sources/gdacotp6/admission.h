@@ -1,0 +1,1 @@
+#define GDACOTP6_ADMITTED 1

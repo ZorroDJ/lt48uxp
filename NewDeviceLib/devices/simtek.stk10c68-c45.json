@@ -1,0 +1,28 @@
+{
+  "id": "simtek.stk10c68-c45",
+  "version": "1.0.0",
+  "kind": "derived",
+  "status": "hardware-qualified",
+  "manufacturer": "Simtek",
+  "part": "STK10C68-C45",
+  "base": {
+    "key": "Simtek:STK11C68 *28SO",
+    "file": "GAB____.rez",
+    "sha256": "72881a986aa39f0a7258f153f6ea30eb74368350229a89cdcde7867f4219c2f9",
+    "class": 2010,
+    "definition": 145,
+    "family": 120,
+    "pinmap": 41,
+    "pins": 28,
+    "capacity_bytes": 8192
+  },
+  "overrides": {
+    "device_type": 65534,
+    "definition": 65534
+  },
+  "variables": [],
+  "resources": [],
+  "evidence": [
+    "evidence.stk"
+  ]
+}

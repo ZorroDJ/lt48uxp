@@ -1,0 +1,61 @@
+/* Generated configuration editor. */
+/* Source-defined boot/security fields remain separate from the memory image. */
+static unsigned c5114_fields(unsigned flags){(void)flags;return 6;}
+static const char *c5114_label(unsigned flags,unsigned field) {
+    (void)flags;static const char *names[]={"Configuration bit 3 (1 = programmed)","Configuration bit 4 (1 = programmed)","Configuration bit 5 (1 = programmed)","Configuration bit 6 (1 = programmed)","Configuration bit 7 (1 = programmed)","Lock level (0–2)"};
+    return field<6?names[field]:"Invalid field";
+}
+typedef struct {app_widgets *widgets;GtkWindow *window;GtkWidget *enable[16],*value[16],*error;unsigned count,flags;size_t device;uint64_t revision;} c5114_editor;
+static gboolean c5114_parse_field(unsigned flags,unsigned field,const char *text,unsigned char *out) {
+    if(field>=c5114_fields(flags) || !text || !*text)return FALSE;
+    static const unsigned radix[]={10,10,10,10,10,10},maximum[]={1,1,1,1,1,2};
+    int hex=radix[field]==16;
+    if(strlen(text)>(hex?2u:3u))return FALSE;
+    for(const char *p=text;*p;p++)if(hex?!g_ascii_isxdigit(*p):!g_ascii_isdigit(*p))return FALSE;
+    char *end;guint64 n=g_ascii_strtoull(text,&end,radix[field]);
+    if(*end || n>maximum[field])return FALSE;
+    *out=(unsigned char)n;return TRUE;
+}
+static char *c5114_configuration_message(unsigned flags,const unsigned char values[6],gboolean edited) {
+    GString *message=g_string_new(edited?"Configuration written and verified.\n":"Configuration read.\n");
+    for(unsigned i=0;i<c5114_fields(flags);i++)g_string_append_printf(message,i>flags?"%s: %02X\n":"%s: %u\n",c5114_label(flags,i),values[i]);
+    g_string_append(message,"Cleanup completed.");return g_string_free(message,FALSE);
+}
+static void c5114_editor_action(GtkButton *button,gpointer data) {
+    c5114_editor *e=data;app_widgets *w=e->widgets;
+    if(!w->has_selected_device || e->device!=w->selected_device_index || e->revision!=w->operation_input_revision){gtk_window_destroy(e->window);return;}
+    unsigned mask=0;unsigned char edit[7]={0};
+    if(g_object_get_data(G_OBJECT(button),"apply"))for(unsigned i=0;i<e->count;i++) {
+        if(!gtk_check_button_get_active(GTK_CHECK_BUTTON(e->enable[i])))continue;
+        const char *text=gtk_editable_get_text(GTK_EDITABLE(e->value[i]));
+        if(!c5114_parse_field(e->flags,i,text,edit+1+i)) {
+            gtk_label_set_text(GTK_LABEL(e->error),"Enter a value within the range shown in the field label.");return;
+        }
+        mask|=1u<<i;
+    }
+    edit[0]=(unsigned char)mask;
+    gtk_drop_down_set_selected(GTK_DROP_DOWN(w->operation_dropdown),9);
+    memcpy(w->c5114_configuration,edit,sizeof(edit));gtk_window_destroy(e->window);
+    w->read_after_prepare=0;start_operation_preparation(w,LT48_OPERATION_CONFIGURATION);
+}
+static void c5114_editor_open(app_widgets *w) {
+    lt48_catalogue_entry device;
+    if(lt48_installation_get_device(w->installation,w->selected_device_index,&device)!=LT48_OK)return;
+    c5114_editor *e=g_new0(c5114_editor,1);e->flags=5;e->count=c5114_fields(e->flags);e->widgets=w;e->device=w->selected_device_index;e->revision=w->operation_input_revision;
+    e->window=GTK_WINDOW(gtk_window_new());gtk_window_set_title(e->window,"AT89C5114 configuration");
+    gtk_window_set_transient_for(e->window,w->window);gtk_window_set_modal(e->window,TRUE);gtk_window_set_default_size(e->window,650,650);
+    GtkWidget *scroll=gtk_scrolled_window_new(),*box=gtk_box_new(GTK_ORIENTATION_VERTICAL,8);
+    gtk_window_set_child(e->window,scroll);gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scroll),box);
+    GtkWidget *intro=gtk_label_new("Read current settings, or check the fields to change. Unchecked fields are preserved.\nThese are new values, not a live read. Chip erase is required to reduce protection.\nLocked chips reject other configuration changes. Flags use 1 for a programmed (zero) register bit. Lock: 0 unlocked through 2 strongest. The code image is 4096 bytes; settings are separate. Erase unlocks and preserves non-security settings.");gtk_label_set_wrap(GTK_LABEL(intro),TRUE);gtk_box_append(GTK_BOX(box),intro);
+    static const char *defaults[]={"0","0","0","0","0","0"};
+    for(unsigned i=0;i<e->count;i++) {
+        GtkWidget *row=gtk_box_new(GTK_ORIENTATION_HORIZONTAL,8);gtk_box_append(GTK_BOX(box),row);
+        e->enable[i]=gtk_check_button_new_with_label(c5114_label(e->flags,i));gtk_box_append(GTK_BOX(row),e->enable[i]);
+        e->value[i]=gtk_entry_new();gtk_widget_set_hexpand(e->value[i],TRUE);gtk_editable_set_text(GTK_EDITABLE(e->value[i]),defaults[i]);gtk_box_append(GTK_BOX(row),e->value[i]);
+    }
+    e->error=gtk_label_new("");gtk_label_set_wrap(GTK_LABEL(e->error),TRUE);gtk_box_append(GTK_BOX(box),e->error);
+    GtkWidget *read=gtk_button_new_with_label("Prepare configuration read"),*apply=gtk_button_new_with_label("Prepare selected changes");
+    gtk_box_append(GTK_BOX(box),read);gtk_box_append(GTK_BOX(box),apply);g_object_set_data(G_OBJECT(apply),"apply",GINT_TO_POINTER(1));
+    g_signal_connect(read,"clicked",G_CALLBACK(c5114_editor_action),e);g_signal_connect(apply,"clicked",G_CALLBACK(c5114_editor_action),e);
+    g_object_set_data_full(G_OBJECT(e->window),"c5114-editor",e,g_free);gtk_window_present(e->window);
+}

@@ -1,0 +1,1 @@
+#define LT48_SN9_ADMITTED 1

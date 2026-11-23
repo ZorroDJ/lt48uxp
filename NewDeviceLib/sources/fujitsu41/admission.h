@@ -1,0 +1,1 @@
+#define LT48_FUJITSU41_STAGE 2

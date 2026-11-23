@@ -1,0 +1,1 @@
+static int df28_binding(const lt48_catalogue_entry*e){return e&&e->device_class==2044&&e->device_type==134&&e->manufacturer_id==31&&e->device_id==40&&!strcmp(e->vendor,"Atmel")&&e->device_name_length==strlen("AT45DB642D(1024)*28TS")&&!memcmp(e->device_name,"AT45DB642D(1024)*28TS",e->device_name_length);}

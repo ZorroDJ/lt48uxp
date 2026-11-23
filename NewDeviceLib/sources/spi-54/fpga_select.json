@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "origin": "authored",
+  "source_profile": "Dataman 13.10",
+  "resource_file": "GDCA___.rez",
+  "source_sha256": "5b391bb2789baa1496eb5db708c3d867b8e25ec2b01dc7ea030eb9c9a84e5a39",
+  "definition": "D1ac",
+  "pinmap": "P5e",
+  "operation": 30,
+  "original_wave": "W419",
+  "effective_wave": "W41a",
+  "reason": "Source selects SO16 fitted image for BGA PinCode; identical BGA image and PinCode/source setup reused from D1a4",
+  "source_fpga_sha256": "83b56838658bfe53ea0ef4e962f2788052cf311103e361225f0b60a9425ad4d8",
+  "effective_fpga_sha256": "03d1753b035d6d33f5bcb22e3302307aafd22f1d62e5b367ec2cbcbc875a2e11"
+}

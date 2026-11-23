@@ -1,0 +1,33 @@
+{
+  "id": "catalyst.cat28c512p",
+  "version": "1.0.0",
+  "kind": "derived",
+  "status": "hardware-qualified",
+  "manufacturer": "Catalyst",
+  "part": "CAT28C512P",
+  "base": {
+    "key": "Catalyst:CAT28C256/I",
+    "file": "GAAC___.rez",
+    "sha256": "a5b774bb0fada8081d9a158f710586df4dafb71c298d4c049c625627dde173c4",
+    "class": 2005,
+    "definition": 26,
+    "family": 20,
+    "pinmap": 9,
+    "pins": 28,
+    "capacity_bytes": 32768
+  },
+  "overrides": {
+    "device_type": 65533,
+    "definition": 65533,
+    "pinmap": 3,
+    "pins": 32,
+    "capacity_bytes": 65536,
+    "manufacturer_id": 0,
+    "device_id": 0
+  },
+  "variables": [],
+  "resources": [],
+  "evidence": [
+    "evidence.cat512"
+  ]
+}

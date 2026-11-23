@@ -1,0 +1,1 @@
+#define LT48_PAGE6_ADMITTED 1

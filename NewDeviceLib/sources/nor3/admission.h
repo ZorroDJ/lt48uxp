@@ -1,0 +1,1 @@
+#define LT48_NOR3_ADMITTED 1

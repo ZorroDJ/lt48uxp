@@ -1,0 +1,1 @@
+#define LT48_MW8_ADMITTED 1

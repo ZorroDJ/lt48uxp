@@ -1,0 +1,1 @@
+#define TMP1962ONE_ADMITTED 1

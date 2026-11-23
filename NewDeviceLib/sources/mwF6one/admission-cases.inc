@@ -1,0 +1,1 @@
+case 367:return LT48_MW36_ADMITTED>=1;

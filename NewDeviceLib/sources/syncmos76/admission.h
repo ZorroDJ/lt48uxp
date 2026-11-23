@@ -1,0 +1,1 @@
+#define LT48_SY76_ADMITTED 3

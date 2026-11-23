@@ -1,0 +1,1 @@
+#define LT48_X88ONE_ADMITTED 1

@@ -1,0 +1,1 @@
+#define LT48_WT10_ADMITTED 1

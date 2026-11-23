@@ -1,0 +1,1 @@
+#define LT48_XP13_ADMITTED 1

@@ -1,0 +1,1 @@
+#define NAND2_ADMITTED 1

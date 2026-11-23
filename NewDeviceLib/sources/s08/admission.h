@@ -1,0 +1,1 @@
+#define LT48_S08_STAGE 22

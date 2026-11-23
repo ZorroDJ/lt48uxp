@@ -1,0 +1,1 @@
+#define LT48_SC4G_ADMITTED 1

@@ -1,0 +1,1 @@
+#define LT48_SM3_ADMITTED 1

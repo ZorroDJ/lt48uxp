@@ -1,0 +1,53 @@
+#include <stdio.h>
+#include <string.h>
+/* Authored, exact Dataman13.10 EPM bindings. Vendor resources remain BYO. */
+#define EPM44_STAGE 4
+struct epm44_profile {const char*key;unsigned d,m,p,pins,stage;};
+static const struct epm44_profile epm44_profiles[]={
+ {"Altera:EPM7032AEas7032 *44",0x24,30,17,44,1},
+ {"Altera:EPM7032AEas7032 *44TQ",0x24,30,17,44,1},
+ {"Altera:EPM7128AE *84",0x28,34,18,48,2},
+ {"Altera:EPM7128AEas7128 *84",0x29,35,18,48,2},
+ {"Altera:EPM7128AEas7128E *84",0x2a,36,18,48,2},
+ {"Altera:EPM7128AEas7128S *84",0x27,33,18,48,2},
+ {"Altera:EPM7032S *44",0x1a,21,15,44,3},
+ {"Altera:EPM7032S *44TQ",0x1a,21,15,44,3},
+ {"Altera:EPM7032S as 7032 *44",0x1b,22,15,44,3},
+ {"Altera:EPM7032S as 7032*44TQ",0x1b,22,15,44,3},
+ {"Altera:EPM7064S *44",0xd,10,12,44,3},
+ {"Altera:EPM7064S *44TQ",0xd,10,12,44,3},
+ {"Altera:EPM7064S @68",0xe,11,13,48,3},
+ {"Altera:EPM7064S @84",0xf,11,14,48,3},
+ {"Altera:EPM7064S as 7064 *44",0x10,12,12,44,3},
+ {"Altera:EPM7064S as 7064 @68",0x11,13,13,48,3},
+ {"Altera:EPM7064S as 7064 @84",0x12,14,14,48,3},
+ {"Altera:EPM7064S as 7064*44TQ",0x10,12,12,44,3},
+ {"Altera:EPM7128A @84",0x13,15,0,48,3},
+ {"Altera:EPM7128S @100",0x15,16,1,48,3},
+ {"Altera:EPM7128S @100TQ",0x15,16,1,48,3},
+ {"Altera:EPM7128S @84",0x14,16,0,48,3},
+ {"Altera:EPM7128S as 7128 @100",0x19,20,1,48,3},
+ {"Altera:EPM7128S as 7128 @84",0x18,19,0,48,3},
+ {"Altera:EPM7128S as 7128E@100",0x17,18,1,48,3},
+ {"Altera:EPM7128S as 7128E@84",0x16,17,0,48,3},
+ {"Altera:EPM7128Sas7128 @100TQ",0x19,20,1,48,3},
+ {"Altera:EPM7128Sas7128E@100TQ",0x17,18,1,48,3},
+ {"Altera:EPM7160S @84",0x1c,23,16,48,3},
+ {"Altera:EPM7160S as 7160 @84",0x1f,26,16,48,3},
+ {"Altera:EPM7160S as 7160E@100",0x1e,25,16,48,3},
+ {"Altera:EPM7160S as 7160E@84",0x1d,24,16,48,3},
+ {"Altera:EPM7160Sas7160E@100TQ",0x1e,25,16,48,3},
+ {"Altera:EPM7096 @100",0x7,5,9,40,4},
+ {"Altera:EPM7096 @100TQ",0x7,5,9,40,4},
+ {"Altera:EPM7096 @68",0x5,4,7,48,4},
+ {"Altera:EPM7096 @84",0x6,4,8,48,4},
+ {"Altera:EPM7128 @84",0x8,6,10,48,4},
+ {"Altera:EPM7128E @100",0xa,7,1,48,4},
+ {"Altera:EPM7128E @100TQ",0xa,7,1,48,4},
+ {"Altera:EPM7128E @84",0x9,7,0,48,4},
+ {"Altera:EPM7160E @100",0xc,9,11,48,4},
+ {"Altera:EPM7160E @100TQ",0xc,9,11,48,4},
+ {"Altera:EPM7160E @84",0xb,8,11,48,4},
+};
+static inline unsigned epm44_stage(unsigned d,unsigned m,unsigned p){for(size_t i=0;i<sizeof epm44_profiles/sizeof *epm44_profiles;i++){const struct epm44_profile*r=&epm44_profiles[i];if(r->d==d&&r->m==m&&r->p==p)return r->stage;}return 0;}
+static inline int epm44_binding(const lt48_device_spec*s){char key[256];snprintf(key,sizeof key,"%s:%.*s",s->catalogue.vendor,(int)s->catalogue.device_name_length,s->catalogue.device_name);for(size_t i=0;i<sizeof epm44_profiles/sizeof *epm44_profiles;i++){const struct epm44_profile*r=&epm44_profiles[i];if(r->stage<=EPM44_STAGE&&s->catalogue.device_class==2027&&r->d==s->definition_resource&&r->m==s->family_code&&r->p==s->pinmap&&r->pins==s->pin_count&&!strcmp(key,r->key))return 1;}return 0;}

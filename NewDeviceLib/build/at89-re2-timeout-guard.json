@@ -1,0 +1,18 @@
+{
+  "format": "command-recipe-1",
+  "working_directory": "project-root",
+  "argv": [
+    "cc",
+    "-std=c11",
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+    "-Ic/include",
+    "c/tests/test_at89_re2_timeout_guard.c",
+    "-Lbuild-c",
+    "-llabtool48",
+    "-o",
+    "build-c/test-at89-re2-timeout-guard"
+  ],
+  "note": "Builds the offline transformation test only. It requires exact user-supplied W363/W364 inputs; no vendor firmware is included. Revision 3 reserves the final GETID byte at 5466 for a shared timeout latch. Production integration remains gated by the RE2 workflow audit."
+}

@@ -1,0 +1,4 @@
+/* Authored exact PALCE610/630 identities; original resources remain BYO. */
+static inline int palce8_definition(unsigned d,unsigned m,unsigned p){return d==0x13&&m==14&&p==17;}
+static inline int palce8_binding(const lt48_device_spec*s){if(s->catalogue.device_class!=2023||strcmp(s->definition_stem,"GBC____")||!palce8_definition(s->definition_resource,s->family_code,s->pinmap))return 0;
+ static const char*keys[]={"AMD:PALCE 610-25","AMD:PALCE 610H-15","AMD:PALCE 610H-25","AMD:PALCE 630H-15","Lattice:PALCE 610-25","Lattice:PALCE 610H-15","Lattice:PALCE 610H-25","Lattice:PALCE 630H-15"};char key[256];snprintf(key,sizeof key,"%s:%.*s",s->catalogue.vendor,(int)s->catalogue.device_name_length,s->catalogue.device_name);if(s->pin_count!=24)return 0;for(size_t i=0;i<sizeof keys/sizeof*keys;i++)if(!strcmp(key,keys[i]))return 1;return 0;}

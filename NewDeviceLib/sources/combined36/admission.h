@@ -1,0 +1,1 @@
+#define LT48_COMBINED36_STAGE 2

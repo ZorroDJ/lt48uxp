@@ -1,0 +1,32 @@
+{
+  "id": "avr.atmega.signature.04",
+  "version": "1.0.0",
+  "kind": "correction",
+  "status": "audited",
+  "manufacturer": "Atmel",
+  "part": "ATmega168A *32TQ",
+  "base": {
+    "key": "Atmel:ATmega168A *32TQ",
+    "file": "GAB____.rez",
+    "sha256": "72881a986aa39f0a7258f153f6ea30eb74368350229a89cdcde7867f4219c2f9",
+    "class": 2010,
+    "definition": 285,
+    "family": 204,
+    "pinmap": 80,
+    "pins": 32,
+    "capacity_bytes": 16896
+  },
+  "overrides": {},
+  "variables": [
+    {
+      "id": 40,
+      "kind": 2,
+      "expected": 11,
+      "value": 6
+    }
+  ],
+  "resources": [],
+  "evidence": [
+    "evidence.avr-atmega-signatures"
+  ]
+}

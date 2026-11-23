@@ -1,0 +1,58 @@
+/* Authored exact-source National COP bindings; original resources are BYO. */
+struct cop48_profile{const char*key;unsigned cls,d,m,p,pins,capacity,bits,blank,stage;};
+static const struct cop48_profile*cop48_binding(const lt48_device_spec*s){
+ static const struct cop48_profile rows[]={
+ {"NS:COP87L84BC *28SO",2012,0x31,24,26,28,16384,8,255,1},
+ {"NS:COP87L84Cxx",2012,0x2f,24,25,28,16384,8,255,1},
+ {"NS:COP87L84Gxx",2012,0x2f,24,25,28,16384,8,255,1},
+ {"NS:COP87L84Rxx",2012,0x30,24,25,28,32768,8,255,1},
+ {"NS:COP87L88Cxx",2012,0x2b,24,28,40,16384,8,255,1},
+ {"NS:COP87L88Cxx *44",2012,0x2d,24,27,44,16384,8,255,1},
+ {"NS:COP87L88Exx",2012,0x2b,24,28,40,16384,8,255,1},
+ {"NS:COP87L88Exx *44",2012,0x2d,24,27,44,16384,8,255,1},
+ {"NS:COP87L88Gxx",2012,0x2b,24,28,40,16384,8,255,1},
+ {"NS:COP87L88Gxx *44",2012,0x2d,24,27,44,16384,8,255,1},
+ {"NS:COP87L88Hxx",2012,0x2c,24,28,40,32768,8,255,1},
+ {"NS:COP87L88Hxx *44",2012,0x2e,24,27,44,32768,8,255,1},
+ {"NS:COP87L88Kxx",2012,0x2c,24,28,40,32768,8,255,1},
+ {"NS:COP87L88Kxx *44",2012,0x2e,24,27,44,32768,8,255,1},
+ {"NS:COP87L88Rxx",2012,0x2c,24,28,40,32768,8,255,1},
+ {"NS:COP87L88Rxx *44",2012,0x2e,24,27,44,32768,8,255,1},
+ {"NS:COP8ACC720 *20SO",2012,0x36,25,29,20,16384,8,255,1},
+ {"NS:COP8ACC728",2012,0x37,25,30,28,16384,8,255,1},
+ {"NS:COP8ACC728 *28SO",2012,0x37,25,30,28,16384,8,255,1},
+ {"NS:COP87L20/40CJ",2012,0x32,23,23,28,4096,8,255,2},
+ {"NS:COP87L20/40RJ",2012,0x33,23,23,28,32768,8,255,2},
+ {"NS:COP87L22/42CJ",2012,0x34,23,24,20,4096,8,255,2},
+ {"NS:COP87L22/42RJ",2012,0x35,23,24,20,32768,8,255,2},
+ {"NS:COP87L88EBV *44",2012,0x38,26,31,44,16384,8,255,2},
+ {"NS:COP87L88RBV *44",2012,0x39,26,31,44,32768,8,255,2},
+ {"NS:COP8SAA716",2012,0x17,17,18,16,1033,8,0,3},
+ {"NS:COP8SAA720",2012,0x18,17,19,20,1033,8,0,3},
+ {"NS:COP8SAA728",2012,0x19,17,20,28,1033,8,0,3},
+ {"NS:COP8SAB720",2012,0x1a,18,19,20,2057,8,0,3},
+ {"NS:COP8SAB728",2012,0x1b,18,20,28,2057,8,0,3},
+ {"NS:COP8SAC720",2012,0x1c,19,19,20,4105,8,0,3},
+ {"NS:COP8SAC728",2012,0x1d,19,20,28,4105,8,0,3},
+ {"NS:COP8SAC740",2012,0x1e,19,21,40,4105,8,0,3},
+ {"NS:COP8SAC744 *PLCC",2012,0x1f,19,22,44,4105,8,0,3},
+ {"NS:COP8SGE720",2012,0x23,20,19,20,8201,8,0,3},
+ {"NS:COP8SGE728",2012,0x24,20,20,28,8201,8,0,3},
+ {"NS:COP8SGE740",2012,0x25,20,21,40,8201,8,0,3},
+ {"NS:COP8SGE744 *PLCC",2012,0x26,20,22,44,8201,8,0,3},
+ {"NS:COP8SGR720",2012,0x27,21,19,20,32777,8,0,3},
+ {"NS:COP8SGR728",2012,0x28,21,20,28,32777,8,0,3},
+ {"NS:COP8SGR740",2012,0x29,21,21,40,32777,8,0,3},
+ {"NS:COP8SGR744 *PLCC",2012,0x2a,21,22,44,32777,8,0,3},
+ {"NS:COP8AJC716",2012,0x20,22,18,16,4105,8,0,4},
+ {"NS:COP8AJC720",2012,0x21,22,19,20,4105,8,0,4},
+ {"NS:COP8AJC728",2012,0x22,22,20,28,4105,8,0,4},
+ {"NS:COP8AKC716",2012,0x20,22,18,16,4105,8,0,4},
+ {"NS:COP8AKC720",2012,0x21,22,19,20,4105,8,0,4},
+ {"NS:COP8AKC728",2012,0x22,22,20,28,4105,8,0,4},
+ };
+ char key[256];snprintf(key,sizeof key,"%s:%.*s",s->catalogue.vendor,(int)s->catalogue.device_name_length,s->catalogue.device_name);
+ for(size_t i=0;i<sizeof rows/sizeof *rows;i++){const struct cop48_profile*b=&rows[i];
+  if(!strcmp(key,b->key)&&s->catalogue.device_class==b->cls&&s->definition_resource==b->d&&s->family_code==b->m&&s->pinmap==b->p&&s->pin_count==b->pins&&s->capacity_bytes==b->capacity&&s->element_bits==b->bits)return b;
+ }return NULL;
+}

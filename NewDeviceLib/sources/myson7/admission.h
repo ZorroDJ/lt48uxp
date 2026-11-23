@@ -1,0 +1,1 @@
+#define LT48_MY7_ADMITTED 1

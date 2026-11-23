@@ -2,7 +2,7 @@
 
 Include:
 
-- Distribution build: 0.1.0-test.20261004.1.
+- Distribution build: 0.1.0-test.20261123.1.
 - Linux distribution/version and CPU architecture.
 - Programmer model and selected database version.
 - Exact selected device entry, physical marking, package and adapter wiring.

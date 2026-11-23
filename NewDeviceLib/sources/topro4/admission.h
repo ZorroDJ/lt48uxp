@@ -1,0 +1,1 @@
+#define LT48_TP4_ADMITTED 1

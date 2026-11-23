@@ -1,0 +1,1 @@
+#define LT48_OB16_ADMITTED 1

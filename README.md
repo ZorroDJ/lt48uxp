@@ -1,168 +1,151 @@
-# LT48UXP — limited Linux test distribution
+# LT48UXP — independent Linux programmer software
 
-> **Download the binary package from [Releases](https://github.com/ashurbanipal-labs/lt48uxp/releases).**
-> The automatically generated “Source code” archives contain documentation only.
-> Extract the `ubuntu24.04-x86_64.tar.gz` asset, enter its `lt48uxp` directory,
-> and follow the setup instructions below. Original databases and firmware are
-> bring-your-own and are not included.
+Build **0.1.0-test.20261123.1**, Ubuntu **26.04 amd64**. Limited-test prerelease.
+This repository now includes the project's native C library, CLI, GTK 4 GUI,
+authored NewDeviceLib and a standalone CMake build. The existing `fpga-idle/`
+project-generated Verilog study is retained.
 
-Build: **0.1.0-test.20261004.1**. Target: **Ubuntu 24.04, x86-64**.
-Independent native C/GTK application for the LabTool-48UXP programmer.
-This directory contains application binaries, launchers and tester documentation.
-Source code, reverse-engineering material, original Windows software, device
-resource files and USB firmware are not included.
+**No original vendor software, databases, firmware or imported private caches
+are supplied.** Obtain your own matching resources separately. Source archives
+now contain buildable application source, unlike the October documentation-only
+release. Packages are available under [Releases](https://github.com/ashurbanipal-labs/lt48uxp/releases).
 
-## Install dependencies and start
+## Install the Ubuntu package
+
+Download `lt48uxp_0.1.0~test.20261123.1_amd64.deb`, then:
 
 ```bash
-sudo apt update
-sudo apt install libgtk-4-1 libusb-1.0-0
-./start-lt48uxp
+sudo apt install ./lt48uxp_0.1.0~test.20261123.1_amd64.deb
 ```
 
-Run the launcher from the extracted directory, or use its absolute path. Keep
-`bin` and `lib` together. No Python, compiler, Ghidra or Windows VM is needed.
-The launchers locate the bundled library relative to themselves. Do not run the
-GUI with sudo. This build is not claimed compatible with Ubuntu 22.04 or other
-architectures.
-
-CLI version check:
+Launch **LabTool-48UXP** from the application menu, or run `labtool48-gtk`.
+Run it as your normal desktop user. The package installs a udev rule; reconnect
+USB after installation. On a remotely logged-in/non-desktop session, check device
+permissions rather than running the GUI as root. Uninstall with:
 
 ```bash
+sudo apt remove lt48uxp
+```
+
+This binary is built on Ubuntu 26.04 and is not claimed compatible with 24.04,
+22.04 or other architectures. Use the source build for other environments.
+Dependencies are declared by the `.deb` and resolved by apt.
+
+## Extract-and-run alternative
+
+Extract `lt48uxp-0.1.0-test.20261123.1-ubuntu26.04-amd64.tar.gz`, enter its
+`lt48uxp` directory, install runtime dependencies and run:
+
+```bash
+sudo apt install libgtk-4-1 libusb-1.0-0
+./start-lt48uxp
 ./lt48-cli version --json
 ```
 
-The executable reports `0.1.0`; use the full distribution build identifier above
-when reporting results. BUILD-INFO.json identifies the input binaries. Release
-copies have debug sections and development-directory runtime paths removed.
-
-## USB permissions
-
-From this directory:
+Keep `bin`, `lib` and `share` together. For USB access with the tar package:
 
 ```bash
-sudo install -m 0644 system/70-labtool48.rules /etc/udev/rules.d/70-labtool48.rules
+sudo install -m 0644 lib/udev/rules.d/70-labtool48.rules /etc/udev/rules.d/70-labtool48.rules
 sudo udevadm control --reload-rules
 ```
 
-Reconnect the programmer's USB cable afterwards. The rule grants access to the
-active local desktop user; it does not make the USB device world-writable.
+Reconnect USB afterwards. The tar package needs no system-wide application install.
 
-## Device database and firmware setup
+## Import your own device resources
 
-The application reads original `.rez` files directly. JSON conversion is not
-needed. Use **Manage Device Databases** to select a complete matching database
-installation or a previously verified native private-cache directory. Dataman
-13.10 provides the main supported set in this build. A catalogue entry alone
-does not mean its operations are implemented.
+Use **Manage Device Databases** to import a complete matching extracted vendor
+installation, or select an existing verified private cache. `.rez` is read
+directly; no JSON conversion or Windows VM is required. Dataman 13.10 is the
+main supported baseline, with additional source-specific AEC support. Files
+from different versions must not be mixed. The application does not unpack
+Windows installers. See [Importing devices](docs/IMPORTING-DEVICES.md).
 
-A private cache contains the original resource data under SHA-256 object names,
-logical resource links, a manifest and the verified idle-FPGA payload. When
-transferring one, copy the whole directory and preserve its internal links.
-Do not mix individual resource files from different software versions.
-
-To import an extracted installation using the bundled C CLI:
+CLI example (use `./lt48-cli` instead of `labtool48` with the tar package):
 
 ```bash
-./lt48-cli cache import /path/to/definitions /path/to/new-private-cache \
+labtool48 cache import /path/to/definitions /path/to/new-private-cache \
   --runtime-source /path/to/original-installation
-./lt48-cli cache verify /path/to/new-private-cache
+labtool48 cache verify /path/to/new-private-cache
 ```
 
-The runtime source must contain an exactly recognized `WLT48UXP.exe`,
-`WDATA48UXP.exe` (or uppercase `.EXE`), or verified `idle-fpga.bin`.
-The destination must not already exist. An arbitrary software version is not
-accepted merely because the filename matches. This utility imports an extracted
-installation; it does not unpack a Windows installer.
+The runtime source must contain a recognized original executable or verified
+idle-FPGA object. USB-bridge firmware is also bring-your-own: use **Import FX2
+HEX…** in programmer controls. Firmware must pass native validation; a matching
+filename is insufficient. Importing a database does not itself load USB firmware.
 
-The GUI recognizes the supported AEC and Dataman runtime names through the
-same C importer and remembers a newly created cache as the active database.
-See [Importing your own devices](docs/IMPORTING-DEVICES.md) for the complete
-GUI procedure, expected files and troubleshooting.
-
-You can set the initial database explicitly:
+Optional startup overrides:
 
 ```bash
-LABTOOL48_INSTALLATION=/path/to/private-cache ./start-lt48uxp
+LABTOOL48_INSTALLATION=/path/to/private-cache labtool48-gtk
+LABTOOL48_FX2_FIRMWARE=/path/to/verified-fx2.hex labtool48-gtk
 ```
 
-For the separate volatile USB-bridge firmware load, select the verified firmware
-file in the programmer setup controls, or start with:
+Only the selected source's admitted native operations are executable. Seeing a
+device in **All** does not establish support. **Supported** filters by native
+admission; changing resource versions can change availability. NewDeviceLib
+1.0.710 accompanies this build. The published support union is 15,768 entries
+across sources, not 15,768 hardware-tested physical parts. Consult
+[Supported devices](docs/SUPPORTED_DEVICES.md) and per-entry audit/HW attributes.
+
+## Build from source
 
 ```bash
-LABTOOL48_FX2_FIRMWARE=/path/to/verified-fx2.hex ./start-lt48uxp
+sudo apt install build-essential cmake pkg-config libgtk-4-dev libusb-1.0-0-dev
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_INSTALL_LIBDIR=lib
+cmake --build build -j2
+sudo cmake --install build
+sudo ldconfig
+labtool48-gtk
 ```
 
-The private database cache does not by itself supply this USB firmware file.
-The firmware-loading UI provides offline preparation and a separate execution
-step. This package does not extract USB firmware from Windows installers.
-Some existing default-path text still names the development tree; select actual
-resource paths explicitly. Registered databases are stored in the user's
-`~/.config/labtool48uxp/databases.ini`.
+GTK 4.10 or newer is required by the GUI APIs. The CLI and underlying operation
+owners are native C. Python, Ghidra and the Windows VM are not runtime/build
+requirements. The standalone CMake build excludes the private research harnesses.
+Run `ctest --test-dir build --output-on-failure` for the included offline
+package diagnostics. To rebuild the .deb and tar assets, install `python3` and
+`dpkg-dev`, then run `python3 packaging/build-packages.py`.
 
-## Imported catalogue versus supported devices
+Manifest-declared project-created library resources are checked by SHA-256
+while configuring. SOURCE-PROVENANCE.json records the production export inputs.
 
-**The binary decides what it can operate. Importing a Windows database does
-not enable every device listed in that database.** The original resources and
-USB firmware are bring-your-own inputs; keep them and generated private caches
-outside this distribution repository and do not upload them with test reports.
-
-The native C backend checks three things for a selected device:
-
-1. **Catalogue entry:** the selected database contains the device.
-2. **Audited resources:** its definition, family, pin map, capacity and resource
-   contents match an admitted native workflow. Depending on the engine, SHA-256
-   checks bind whole resource files or specific audited resources.
-3. **Implemented operation:** this binary implements the requested operation
-   for that accepted definition. The GUI uses these C checks to determine
-   operation availability.
-
-Finding a Read, Program or Erase callback in an imported resource file is not
-sufficient to enable that operation.
-
-| Imported content | Result |
-| --- | --- |
-| Audited resources and implemented workflow | Applicable operations are enabled |
-| Listed device without an implemented workflow | Listing alone does not enable operations |
-| Changed or unrecognized operation resources | The native engine rejects them |
-| Corrupted or incomplete installation | Import or validation fails |
-
-For example, the EN29LV flash batch requires the audited `GDAAA__.rez` digest
-and one of ten admitted definitions with matching geometry and pin maps. A
-matching device name in another software release does not automatically qualify.
-
-**Cache verification confirms integrity and structural completeness; it does
-not certify Linux operation support.** The supported-device list is generated
-from the binary's operation checks, independently of the imported catalogue's
-size. A newer or arbitrary Windows library can therefore provide less usable
-coverage with this binary than the audited Dataman 13.10 library. Keep each
-source version complete and separate; do not combine individual `.rez` files.
-
-## Device coverage and testing
-
-See [Supported devices](docs/SUPPORTED_DEVICES.md): **4,263 catalogue entries**,
-including aliases and package variants. Entries include all applicable native
-operations, but physical qualification is sample-specific. The list distinguishes
-recorded hardware evidence from source audits. Selecting an operation may erase,
-program or protect the inserted part; confirm the selected device and adapter.
-Original package adapter requirements still apply, particularly TSOP/FBGA parts.
-
-This is an external-test preparation snapshot. CLI startup, library resolution
-and bundle integrity were checked; no new hardware tests were performed while
-assembling it. Fresh-machine GUI startup and the first-run setup still require
-external qualification. The
-production GUI import worker passed offline tests for both supported Dataman
-executable names, cache verification and rejection of unrecognized runtime data.
-
-## Reporting a result
-
-See [Testing and reports](docs/TESTING.md). Use the GitHub issue tracker when
-invited to https://github.com/ashurbanipal-labs/lt48uxp.
-
-## Integrity
-
-From this directory run:
+To inspect that library without a programmer:
 
 ```bash
-sha256sum -c SHA256SUMS
+labtool48 new-device-lib validate /usr/local/share/labtool48/NewDeviceLib --json
 ```
+
+## Changes and qualification limits
+
+This release includes the recent contributor maintenance fixes and GUI work:
+nonblocking progress polling, full-image editor navigation and edit guards,
+retained catalogue parsing and a persistent support/filter index. See the
+[GUI audit](docs/GUI_OPERATIONS_AUDIT.md). The three GUI fixes passed offline
+regressions including 116 real prepare/dispatch cases stopped before USB.
+The originally reported physical-session “not responding” warning still needs
+live confirmation. First catalogue indexing after a source/build change can
+still take time; later searches reuse the cached index.
+
+Most supported entries are qualified by original-workflow audit and simulation,
+not individual hardware testing. Inspect adapter requirements, voltage and
+operation availability before using a valuable part. Operation-specific
+limitations remain visible; publication does not waive them. Test only devices
+whose contents you may alter. [Testing/reporting guide](docs/TESTING.md).
+
+The packages contain no vendor `.rez`, Windows executable, USB firmware, vendor
+FPGA bitstream or private imported object. The sole shipped applet `.bin` is a
+38-byte routine authored in this project; its assembly and encoder are included.
+No license for vendor material is conveyed. No additional open-source license
+is selected by this publication; dependency licenses continue to apply.
+
+## Why “ashurbanipal-labs”?
+
+The name refers to the [Library of Ashurbanipal](https://en.wikipedia.org/wiki/Library_of_Ashurbanipal),
+the ancient collection of cuneiform clay tablets at Nineveh. Think of those
+tablets as an early kind of **ROM-code**: information encoded into a physical
+medium, retained without power, and readable long after its creators were gone.
+Their contents were texts rather than executable instructions, but the
+preservation principle is familiar to anyone reading an old ROM.
+
+This project carries that idea into electronics: recover the knowledge,
+document how it works, and keep older equipment readable and useful. The
+repository name `lt48uxp` identifies the programmer it supports.

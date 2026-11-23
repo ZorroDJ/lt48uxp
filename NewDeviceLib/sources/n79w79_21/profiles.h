@@ -1,0 +1,33 @@
+#include "configuration.h"
+static const struct nw21_profile {unsigned definition,family,pinmap,capacity,fields,configuration,regions,length[3],physical[3],logical[3],variables;const struct numicro_field*schema;} nw21_profiles[]={
+{395,290,135,8320,13,25209,2,{8192,128},{0,0},{0,64512},6,nw21_fields_25209},
+{396,291,136,8320,13,25209,2,{8192,128},{0,0},{0,64512},6,nw21_fields_25209},
+{401,296,138,16512,14,25211,2,{16384,128},{0,0},{0,64512},6,nw21_fields_25211},
+{400,295,134,4224,14,25195,2,{4096,128},{0,0},{0,64512},6,nw21_fields_25195},
+{153,151,64,20480,4,25077,2,{16384,4096},{0,0},{0,16384},6,nw21_fields_25077},
+{398,293,133,2176,9,25194,2,{2048,128},{0,0},{0,64512},4,nw21_fields_25194},
+{399,294,133,4224,9,25194,2,{4096,128},{0,0},{0,64512},4,nw21_fields_25194},
+};
+static const struct {unsigned definition,manufacturer,device;const char*vendor,*name;} nw21_members[]={
+{395,0,0,"Nuvoton","N79E352A"},
+{396,0,0,"Nuvoton","N79E352A *44"},
+{396,0,0,"Nuvoton","N79E352A *44Q"},
+{401,0,0,"Nuvoton","N79E875 *48LQ"},
+{401,0,0,"Nuvoton","N79E87J *48LQ"},
+{400,0,0,"Nuvoton","W79A9311 *20SO"},
+{153,218,101,"Nuvoton","W79E201 *44"},
+{153,218,101,"Nuvoton","W79E201 *44Q"},
+{398,0,0,"Nuvoton","W79E2051"},
+{398,0,0,"Nuvoton","W79E2051 *20SO"},
+{399,0,0,"Nuvoton","W79E4051"},
+{399,0,0,"Nuvoton","W79E4051 *20SO"},
+{400,0,0,"Nuvoton","W79E8213 *20SO"},
+{400,0,0,"Winbond","W79A9311 *20SO"},
+{153,218,101,"Winbond","W79E201 *44"},
+{153,218,101,"Winbond","W79E201 *44Q"},
+{398,0,0,"Winbond","W79E2051"},
+{398,0,0,"Winbond","W79E2051 *20SO"},
+{399,0,0,"Winbond","W79E4051"},
+{399,0,0,"Winbond","W79E4051 *20SO"},
+{400,0,0,"Winbond","W79E8213 *20SO"},
+};

@@ -1,0 +1,1 @@
+#define LT48_SST38ONE_ADMITTED 1

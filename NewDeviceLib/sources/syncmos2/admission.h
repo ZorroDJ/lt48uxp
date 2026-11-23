@@ -1,0 +1,1 @@
+#define LT48_SC2_ADMITTED 1

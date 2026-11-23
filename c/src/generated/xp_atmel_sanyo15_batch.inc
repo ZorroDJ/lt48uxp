@@ -1,0 +1,1 @@
+static int xp_atmel_sanyo15_batch(unsigned d){switch(d){case 177:case 178:case 179:case 181:case 182:case 183:case 187:case 188:case 235:case 236:case 237:case 238:case 239:case 240:return 1;default:return 0;}}

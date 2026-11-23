@@ -1,0 +1,32 @@
+{
+  "id": "avr.atmega.signature.10",
+  "version": "1.0.0",
+  "kind": "correction",
+  "status": "audited",
+  "manufacturer": "Atmel",
+  "part": "ATmega88/V @32MLF(NC)",
+  "base": {
+    "key": "Atmel:ATmega88/V @32MLF(NC)",
+    "file": "GAB____.rez",
+    "sha256": "72881a986aa39f0a7258f153f6ea30eb74368350229a89cdcde7867f4219c2f9",
+    "class": 2010,
+    "definition": 294,
+    "family": 209,
+    "pinmap": 85,
+    "pins": 32,
+    "capacity_bytes": 8704
+  },
+  "overrides": {},
+  "variables": [
+    {
+      "id": 40,
+      "kind": 2,
+      "expected": 15,
+      "value": 10
+    }
+  ],
+  "resources": [],
+  "evidence": [
+    "evidence.avr-atmega-signatures"
+  ]
+}

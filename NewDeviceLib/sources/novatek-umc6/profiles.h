@@ -1,0 +1,15 @@
+/* Authored exact source bindings; original assets remain BYO. */
+#include "admission.h"
+static inline int novatek_umc6_definition(unsigned cls,unsigned d){return cls==2001&&d>=0x3c&&d<=0x40;}
+static int novatek_umc6_group(const lt48_m37_resource_audit*a){
+ static const unsigned char sha[32]={0x2e,0x62,0x61,0xc8,0x67,0xd6,0x85,0x77,0x86,0x93,0x3c,0x0d,0x09,0x3e,0x5b,0xd6,0x69,0xf7,0x03,0x55,0xcc,0x21,0x8f,0xf0,0x06,0xc8,0x8c,0x4f,0xb9,0x19,0x63,0x6b};
+ static const struct{unsigned d,m,p,pins,size,stage;}rows[]={
+ {62,48,16,40,24576,1},
+ {63,49,17,42,24576,2},
+ {64,50,4,40,32768,2},
+ {60,46,2,40,8192,1},
+ {61,47,3,40,16384,1},
+ };if(a->device_class!=2001||memcmp(a->definition_sha256,sha,32))return 0;
+ for(size_t i=0;i<sizeof rows/sizeof *rows;i++)if(NOVATEK_UMC6_STAGE>=rows[i].stage&&a->device_type==rows[i].d&&a->family_code==rows[i].m&&a->pinmap==rows[i].p&&a->pin_count==rows[i].pins&&a->capacity_bytes==rows[i].size)return 1;
+ return 0;
+}

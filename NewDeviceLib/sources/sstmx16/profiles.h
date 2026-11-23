@@ -1,0 +1,32 @@
+#include "configuration.h"
+static const struct sm16_profile{unsigned definition,family,pinmap,capacity,fields,configuration,variables,ops,apps,variant,nominal;const struct numicro_field*schema;}sm16_profiles[]={
+{80,34,17,65536,6,25013,3,14,5,2,330,sm16_fields_25013},
+{81,35,18,65536,6,25013,3,14,5,2,330,sm16_fields_25013},
+{113,47,24,65536,5,25049,6,13,4,3,500,sm16_fields_25049},
+{194,91,65,9216,13,25132,2,13,4,1,500,sm16_fields_25132},
+{195,92,66,9216,13,25132,2,13,4,1,500,sm16_fields_25132},
+{196,91,65,17408,13,25132,2,13,4,1,500,sm16_fields_25132},
+{197,92,66,17408,13,25132,2,13,4,1,500,sm16_fields_25132},
+{198,93,65,9216,13,25132,2,13,4,1,330,sm16_fields_25132},
+{199,94,66,9216,13,25132,2,13,4,1,330,sm16_fields_25132},
+{200,93,65,17408,13,25132,2,13,4,1,330,sm16_fields_25132},
+{201,94,66,17408,13,25132,2,13,4,1,330,sm16_fields_25132},
+};
+static const struct{unsigned definition,manufacturer,device;const char*vendor,*name;}sm16_members[]={
+{80,194,160,"Macronix","MX10E8050I"},
+{81,194,160,"Macronix","MX10E8050I *44"},
+{81,194,160,"Macronix","MX10E8050I *44TQ"},
+{113,21,234,"Macronix","MX10EXA *44"},
+{194,191,66,"SST","89E52RC"},
+{195,191,66,"SST","89E52RC *44"},
+{195,191,66,"SST","89E52RC *44TQ"},
+{196,191,67,"SST","89E54RC"},
+{197,191,67,"SST","89E54RC *44"},
+{197,191,67,"SST","89E54RC *44TQ"},
+{198,191,74,"SST","89V52RC"},
+{199,191,74,"SST","89V52RC *44"},
+{199,191,74,"SST","89V52RC *44TQ"},
+{200,191,75,"SST","89V54RC"},
+{201,191,75,"SST","89V54RC *44"},
+{201,191,75,"SST","89V54RC *44TQ"},
+};

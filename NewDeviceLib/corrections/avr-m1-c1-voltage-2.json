@@ -1,0 +1,32 @@
+{
+  "id": "avr.m1-c1.parallel-voltage.2",
+  "version": "1.0.0",
+  "kind": "correction",
+  "status": "audited",
+  "manufacturer": "Atmel",
+  "part": "ATMega32M1 *32TQ",
+  "base": {
+    "key": "Atmel:ATMega32M1 *32TQ",
+    "file": "GAB____.rez",
+    "sha256": "72881a986aa39f0a7258f153f6ea30eb74368350229a89cdcde7867f4219c2f9",
+    "class": 2010,
+    "definition": 276,
+    "family": 198,
+    "pinmap": 84,
+    "pins": 32,
+    "capacity_bytes": 33792
+  },
+  "overrides": {},
+  "variables": [
+    {
+      "id": 0,
+      "kind": 0,
+      "expected": 131402,
+      "value": 131572
+    }
+  ],
+  "resources": [],
+  "evidence": [
+    "evidence.avr-m1-c1-parallel-voltage"
+  ]
+}

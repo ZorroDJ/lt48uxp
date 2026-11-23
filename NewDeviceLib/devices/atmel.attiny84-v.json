@@ -1,0 +1,28 @@
+{
+  "id": "atmel.attiny84-v",
+  "version": "1.0.0",
+  "kind": "derived",
+  "status": "audited",
+  "manufacturer": "Atmel",
+  "part": "ATtiny84/V",
+  "base": {
+    "key": "Atmel:ATtiny84/V *14SO",
+    "file": "GAB____.rez",
+    "sha256": "72881a986aa39f0a7258f153f6ea30eb74368350229a89cdcde7867f4219c2f9",
+    "class": 2010,
+    "definition": 100,
+    "family": 79,
+    "pinmap": 23,
+    "pins": 14,
+    "capacity_bytes": 8704
+  },
+  "overrides": {
+    "device_type": 65524,
+    "definition": 65524
+  },
+  "variables": [],
+  "resources": [],
+  "evidence": [
+    "evidence.avr"
+  ]
+}

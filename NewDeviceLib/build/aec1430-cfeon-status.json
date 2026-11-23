@@ -1,0 +1,9 @@
+{
+  "id": "build.aec1430-cfeon-status",
+  "version": "1.0.0",
+  "source": "sources/cfeon/aec1430_status_selector.inc",
+  "integration": "Included by c/src/addtab_spi.c in labtool48_core",
+  "command": "cmake --build build-c --target labtool48 labtool48-gtk",
+  "qualification": "PYTHONPATH=src:tools .venv-productivity/bin/python tools/audit_aec1430_status_selector.py",
+  "scope": "Exact-source compiled status-reader correction; no vendor payload; hardware pending"
+}

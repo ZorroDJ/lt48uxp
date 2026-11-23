@@ -1,0 +1,9 @@
+{
+  "id": "build.at45db642d-config-read",
+  "version": "1.0.0",
+  "source": "sources/adesto/at45db642d_config_read.inc",
+  "integration": "Included by c/src/addtab_spi.c in labtool48_core",
+  "command": "cmake --build build-fast --target labtool48-gtk labtool48-addtab-spi-test labtool48-gtk-addtab-spi-test",
+  "qualification": "PYTHONPATH=src:tools .venv-productivity/bin/python tools/audit_adesto_dataflash.py D26",
+  "scope": "Compiled exact-source register-read correction; no vendor payload; source audit only"
+}

@@ -1,0 +1,1 @@
+#define LT48_SY80_ADMITTED 1

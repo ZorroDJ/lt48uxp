@@ -1,0 +1,9 @@
+{
+  "id": "build.pof-trs-read",
+  "version": "1.0.0",
+  "source": "sources/pof/trs_read_reconstruction.inc",
+  "integration": "Included by c/src/pof.c in labtool48_core",
+  "command": "cmake --build build-fast --target labtool48-pof-session-test labtool48-pof-device-test",
+  "qualification": "ctest --test-dir build-fast -R pof --output-on-failure",
+  "scope": "Compiled correction for transformed class-2028 full-image Read; not a runtime-loaded parameter override; no device admission"
+}

@@ -1,0 +1,14 @@
+/* Exact GDAB AT49LL candidate profiles. Public admission pending. */
+static const uint32_t xp_atmel_ll_protection[]={0};
+static const uint32_t xp_atmel_ll_erase_1a[]={0x0,0x10000,0x20000,0x30000,0x38000,0x3a000,0x3c000};
+static const uint32_t xp_atmel_ll_erase_1e[]={0x0,0x10000,0x20000,0x30000,0x40000,0x50000,0x60000,0x70000,0x74000,0x76000,0x78000};
+static const uint32_t xp_atmel_ll_erase_1b[]={0x0,0x10000,0x20000,0x30000,0x40000,0x50000,0x60000,0x70000,0x74000,0x76000,0x78000};
+static const uint32_t xp_atmel_ll_erase_19[]={0x0,0x10000,0x20000,0x30000,0x40000,0x50000,0x60000,0x70000,0x80000,0x90000,0xa0000,0xb0000,0xc0000,0xd0000,0xe0000,0xf0000};
+static const uint32_t xp_atmel_ll_erase_e[]={0x0,0x10000,0x20000,0x30000,0x40000,0x50000,0x60000,0x70000,0x80000,0x90000,0xa0000,0xb0000,0xc0000,0xd0000,0xe0000,0xf0000};
+static const struct intel_byte_closure xp_atmel_ll5_closures[]={
+ {{0x1a,11,6,40,262144,330,xp_atmel_ll_protection,1},xp_atmel_ll_erase_1a,7,4,12},
+ {{0x1e,12,5,32,524288,330,xp_atmel_ll_protection,1},xp_atmel_ll_erase_1e,11,4,12},
+ {{0x1b,11,6,40,524288,330,xp_atmel_ll_protection,1},xp_atmel_ll_erase_1b,11,4,12},
+ {{0x19,3,9,32,1048576,330,xp_atmel_ll_protection,1},xp_atmel_ll_erase_19,16,4,12},
+ {{0xe,4,6,40,1048576,330,xp_atmel_ll_protection,1},xp_atmel_ll_erase_e,16,4,12},
+};

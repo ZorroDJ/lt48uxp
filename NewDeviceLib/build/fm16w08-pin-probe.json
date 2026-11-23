@@ -1,0 +1,20 @@
+{
+  "format": "command-recipe-1",
+  "working_directory": "project-root",
+  "argv": [
+    "cc",
+    "-std=c11",
+    "-I",
+    "c/include",
+    "-I",
+    "c/src",
+    "NewDeviceLib/sources/fram/native_fm16w08_pin_probe.c",
+    "-L",
+    "build-c",
+    "-llabtool48",
+    "-Wl,-rpath,$ORIGIN",
+    "-o",
+    "build-c/native-fm16w08-pin-probe"
+  ],
+  "note": "Build only. Never execute the resulting hardware diagnostic automatically. Source is experimental."
+}

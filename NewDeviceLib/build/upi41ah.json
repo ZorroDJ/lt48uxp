@@ -1,0 +1,9 @@
+{
+  "id": "build.upi41ah",
+  "version": "1.0.0",
+  "sources": ["sources/upi41ah/resources.inc", "sources/upi41ah/operations.inc"],
+  "integration": "Included by c/src/mcu51.c in labtool48_core; exact GADA D91/D92/D93 only",
+  "command": "cmake --build build-c --target labtool48 labtool48-gtk",
+  "qualification": "PYTHONPATH=src:tools .venv-productivity/bin/python tools/audit_upi41ah.py; ctest --test-dir build-c -R upi41ah --output-on-failure",
+  "scope": "Authored Intel AH signature/security and intelligent programming workflow; vendor FPGA remains operator supplied; hardware pending"
+}

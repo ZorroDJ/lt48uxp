@@ -1,0 +1,32 @@
+{
+  "id": "issi.is25lp064a-boundary",
+  "version": "1.0.0",
+  "kind": "correction",
+  "status": "audited",
+  "manufacturer": "ISSI",
+  "part": "IS25LP064A boundary correction",
+  "base": {
+    "key": "*",
+    "file": "GDCA___.rez",
+    "sha256": "5b391bb2789baa1496eb5db708c3d867b8e25ec2b01dc7ea030eb9c9a84e5a39",
+    "class": 2044,
+    "definition": 355,
+    "family": 359,
+    "pinmap": 80,
+    "pins": 8,
+    "capacity_bytes": 8389632
+  },
+  "overrides": {},
+  "variables": [
+    {
+      "id": 16,
+      "kind": 2,
+      "expected": 2097152,
+      "value": 8388608
+    }
+  ],
+  "resources": [],
+  "evidence": [
+    "evidence.issi"
+  ]
+}

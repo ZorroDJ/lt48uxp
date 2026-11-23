@@ -1,0 +1,1 @@
+#define LT48_N76ONE_ADMITTED 1

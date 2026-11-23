@@ -1,0 +1,3 @@
+#ifndef LT48_AEC1440_ADMITTED
+#define LT48_AEC1440_ADMITTED 1
+#endif

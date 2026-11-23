@@ -1,0 +1,1 @@
+#define LT48_TPI15_ADMITTED 1

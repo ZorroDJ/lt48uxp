@@ -1,0 +1,30 @@
+{
+  "id": "ramtron.fm16w08",
+  "version": "1.0.0",
+  "kind": "experimental",
+  "status": "experimental",
+  "manufacturer": "RAMTRON",
+  "part": "FM16W08-SG",
+  "base": {
+    "key": "RAMTRON:FM1808",
+    "file": "GDAC___.rez",
+    "sha256": "4abfb9024179d1cf38f17bc43ebfdaabaca4694b95e76e73edfdbbe7a0f46710",
+    "class": 2034,
+    "definition": 49,
+    "family": 34,
+    "pinmap": 25,
+    "pins": 28,
+    "capacity_bytes": 32768
+  },
+  "overrides": {
+    "capacity_bytes": 8192
+  },
+  "variables": [],
+  "resources": [
+    "source.fm16w08-pin-probe",
+    "build.fm16w08-pin-probe"
+  ],
+  "evidence": [
+    "evidence.fram-native"
+  ]
+}

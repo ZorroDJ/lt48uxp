@@ -1,0 +1,77 @@
+{
+  "passed": true,
+  "hardware_mutations": false,
+  "steps": [
+    {
+      "name": "ui",
+      "command": [
+        "build-desktop/labtool48-gtk-ui-audit-test",
+        "analysis/software-v13.10/private-cache"
+      ],
+      "returncode": 0,
+      "seconds": 19.9041605591774
+    },
+    {
+      "name": "github-regression",
+      "command": [
+        "build-desktop/labtool48-gtk-github-fixes-test"
+      ],
+      "returncode": 0,
+      "seconds": 0.0642025510314852
+    },
+    {
+      "name": "core",
+      "command": [
+        "build-desktop/labtool48-core-test"
+      ],
+      "returncode": 0,
+      "seconds": 0.1142345629632473
+    }
+  ],
+  "sha256": {
+    "c/apps/gtk/main.c": "1afdb399e34744cb2ffba7a3cf6a245b3fff419780d245df9711910e590e5919",
+    "c/apps/gtk/catalogue_index.inc": "f28cb11dba2c27ddff338868daa8697859ccf70efcfb015f25a03a03e0849fdb",
+    "c/src/installation.c": "bb87714903854f699655b21ebdfbb616fb368c9856dff63dd2228ae8098d6788",
+    "c/src/usb_libusb.c": "c6533ac014eee73b3b3653b8f492017885c3237e2acccd69bb53498f39a73e38",
+    "c/include/labtool48/labtool48.h": "99fec223288d3fdbe29958bab4116acd028af0304134b9e943c6f5e1a01b5d4d",
+    "c/tests/test_gtk_ui_audit.c": "ac557fdab473c28a2c7b2903fe0cab7ed511032e48dd182a04a4139ee9c5d460",
+    "c/tests/test_gtk_operations_audit.c": "bc8c71a4ebe4edfb018d5017307601606f5b3e570c6c04ab822fec761000f213",
+    "build-desktop/labtool48-gtk": "32a32fac3efde66572ef3a9f6752e833a1494c3bbac1142d947b8cc0f8f604f5",
+    "build-desktop/liblabtool48.so.0": "2cdca7cd971ffc099bf09baacb1b11edbcff9fc228b4ebeaca5ec55e50803d48"
+  },
+  "schema": 1,
+  "date": "2026-11-16",
+  "issues": [
+    "UI-001",
+    "UI-002",
+    "UI-003"
+  ],
+  "operation_audit": {
+    "passed": true,
+    "cases": 116,
+    "devices": 8,
+    "repetitions": 2,
+    "usb_context_blocked": true,
+    "log": "analysis/simulation-runs/1794855521046928663-gui-operations-audit3/output.log",
+    "log_sha256": "777714ca262b9b050c97cd70ab534f1649810c1236215c4e4c277e1e6165f377",
+    "main_source_matches_current": true,
+    "native_library_matches_current": true
+  },
+  "limitations": [
+    "No physical device operation or live reproduction of the reported unresponsive-app dialog.",
+    "GUI dispatch audited to blocked USB boundary; unchanged native/original workflow evidence reused.",
+    "Non-Unix persistent cache acceleration not qualified."
+  ],
+  "component_timings": {
+    "parsed_us": 497969,
+    "cold_index_us": 17724126,
+    "warm_index_us": 95,
+    "render_us": 145726,
+    "entries": 15564
+  },
+  "logs": {
+    "analysis/gui-ui-fixes-2026-11-16/ui.log": "67adb6543fd68560f027295db2f274cf06f4dfe8e558ed8a5837d9f7fdfe9255",
+    "analysis/gui-ui-fixes-2026-11-16/github-regression.log": "cbe5032dffa8b39f6168998e2ce79c9680b40a86583949a1a4edd79f1e474845",
+    "analysis/gui-ui-fixes-2026-11-16/core.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

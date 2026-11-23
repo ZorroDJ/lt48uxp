@@ -1,0 +1,1 @@
+#define NOVATEK_AUX12_STAGE 5

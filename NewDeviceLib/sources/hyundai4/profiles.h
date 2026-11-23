@@ -1,0 +1,11 @@
+/* Authored finite Hyundai bindings; original source assets remain BYO. */
+static const b12otp_profile hy4_profiles[]={
+{22,22,1,"GMS77C1000",{512,4095,4088,4092,0,0,24,100,11,10000,0,0,0,0,0},12,12,{{0,0,1,500,2},{0,2,0,475,2},{0,1,0,600,2},{0,3,1,1200,3},{1,13,0,0,2},{1,8,1,0,100},{1,10,1,1,100},{1,14,1,0,10},{2,19,0,516,0},{2,18,0,4095,0},{0,5,1,450,2},{0,6,1,575,2}},{0,1,3,4,6,16,8,15,14,11,12,10},{1,5,11,16,17,18,19,20,21,13,14,12}},
+{23,23,1,"GMS77C1000A",{512,4095,4088,4092,0,0,24,100,11,10000,0,0,0,0,0},12,12,{{0,0,1,500,2},{0,2,0,475,2},{0,1,0,600,2},{0,3,1,1200,3},{1,13,0,0,2},{1,8,1,0,100},{1,10,1,1,100},{1,14,1,0,10},{2,19,0,516,0},{2,18,0,4095,0},{0,5,1,450,2},{0,6,1,575,2}},{0,1,3,4,6,16,8,15,14,11,12,10},{1,5,11,16,17,18,19,20,21,13,14,12}},
+{24,24,1,"GMS77C1001",{1024,4095,4088,4092,0,0,24,100,11,10000,0,0,0,0,0},13,12,{{0,0,1,500,2},{0,2,0,475,2},{0,1,0,600,2},{0,3,1,1200,3},{1,13,0,0,2},{1,8,1,0,100},{1,10,1,1,100},{1,14,1,0,10},{1,12,0,0,1},{2,19,0,1028,0},{2,18,0,4095,0},{0,5,1,475,2},{0,6,1,525,2}},{0,1,3,4,6,16,8,15,14,11,12,10},{1,5,15,16,17,18,19,20,21,13,14,12}},
+{25,25,1,"GMS77C1001A",{1024,4095,4088,4092,0,0,24,100,11,10000,0,0,0,0,0},13,12,{{0,0,1,500,2},{0,2,0,475,2},{0,1,0,600,2},{0,3,1,1200,3},{1,13,0,0,2},{1,8,1,0,100},{1,10,1,1,100},{1,14,1,0,10},{1,12,0,0,1},{2,19,0,1028,0},{2,18,0,4095,0},{0,5,1,475,2},{0,6,1,525,2}},{0,1,3,4,6,16,8,15,14,11,12,10},{1,5,15,16,17,18,19,20,21,13,14,12}},
+};
+static const b12otp_profile*hy4_match(const lt48_device_spec*s){
+if(!s||s->catalogue.device_class!=2015||!s->definition_stem||strcmp(s->definition_stem,"GADC___")||!s->catalogue.vendor||strcmp(s->catalogue.vendor,"Hyundai(Hynix)")||s->element_bits!=12||s->capacity_bytes!=8192||s->pin_count!=18||s->catalogue.manufacturer_id||s->catalogue.device_id)return NULL;
+for(size_t i=0;i<sizeof hy4_profiles/sizeof*hy4_profiles;i++){const b12otp_profile*p=hy4_profiles+i;if(s->definition_resource==p->definition&&s->family_code==p->family&&s->pinmap==p->pinmap&&s->catalogue.device_name_length==strlen(p->name)&&!memcmp(s->catalogue.device_name,p->name,strlen(p->name)))return p;}return NULL;}
+static int hy4_profile(const b12otp_profile*p){for(size_t i=0;i<sizeof hy4_profiles/sizeof*hy4_profiles;i++)if(p==hy4_profiles+i)return 1;return 0;}

@@ -1,0 +1,32 @@
+{
+  "id": "avr35.tiny26l-voltage",
+  "version": "1.0.0",
+  "kind": "correction",
+  "status": "audited",
+  "manufacturer": "Atmel",
+  "part": "ATtiny26L",
+  "base": {
+    "key": "Atmel:ATtiny26L",
+    "file": "GAB____.rez",
+    "sha256": "72881a986aa39f0a7258f153f6ea30eb74368350229a89cdcde7867f4219c2f9",
+    "class": 2010,
+    "definition": 204,
+    "family": 163,
+    "pinmap": 68,
+    "pins": 20,
+    "capacity_bytes": 2176
+  },
+  "overrides": {},
+  "variables": [
+    {
+      "id": 0,
+      "kind": 0,
+      "expected": 131402,
+      "value": 131572
+    }
+  ],
+  "resources": [],
+  "evidence": [
+    "evidence.avr35-source-corrections"
+  ]
+}

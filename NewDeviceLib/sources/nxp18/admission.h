@@ -1,0 +1,1 @@
+#define LT48_NXP18_ADMITTED 1

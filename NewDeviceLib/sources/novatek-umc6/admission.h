@@ -1,0 +1,1 @@
+#define NOVATEK_UMC6_STAGE 2

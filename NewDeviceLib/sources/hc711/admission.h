@@ -1,0 +1,1 @@
+#define LT48_HC711_STAGE 10

@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=LabTool-48UXP
+Comment=Independent device programmer frontend
+Exec=labtool48-gtk
+Terminal=false
+Categories=Development;Electronics;
+Keywords=EPROM;EEPROM;Flash;device programmer;

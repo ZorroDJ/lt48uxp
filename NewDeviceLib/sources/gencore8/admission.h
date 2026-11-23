@@ -1,0 +1,1 @@
+#define LT48_GC8_ADMITTED 1

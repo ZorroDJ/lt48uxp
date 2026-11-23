@@ -1,0 +1,1 @@
+#define AMIC4_ADMITTED 1

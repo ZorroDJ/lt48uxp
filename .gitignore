@@ -14,3 +14,7 @@
 *.log
 core
 core.*
+
+/build*/
+/dist/
+!NewDeviceLib/applets/atmel-word-timeout-tail.bin

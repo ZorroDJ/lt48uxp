@@ -1,0 +1,1 @@
+#define LT48_W78EIGHT_STAGE 2

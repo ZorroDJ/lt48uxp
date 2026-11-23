@@ -1,0 +1,32 @@
+{
+  "id": "avr35.tiny22-signature",
+  "version": "1.0.0",
+  "kind": "correction",
+  "status": "audited",
+  "manufacturer": "Atmel",
+  "part": "ATtiny22/L",
+  "base": {
+    "key": "Atmel:ATtiny22/L",
+    "file": "GAB____.rez",
+    "sha256": "72881a986aa39f0a7258f153f6ea30eb74368350229a89cdcde7867f4219c2f9",
+    "class": 2010,
+    "definition": 80,
+    "family": 61,
+    "pinmap": 12,
+    "pins": 8,
+    "capacity_bytes": 2176
+  },
+  "overrides": {},
+  "variables": [
+    {
+      "id": 40,
+      "kind": 2,
+      "expected": 3,
+      "value": 6
+    }
+  ],
+  "resources": [],
+  "evidence": [
+    "evidence.avr35-source-corrections"
+  ]
+}

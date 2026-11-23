@@ -1,0 +1,1 @@
+#define LT48_SX30_ADMITTED 1

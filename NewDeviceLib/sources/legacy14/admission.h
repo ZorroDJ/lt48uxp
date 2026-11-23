@@ -1,0 +1,1 @@
+#define LT48_LEGACY14_STAGE 3

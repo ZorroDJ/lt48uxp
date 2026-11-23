@@ -4238,6 +4238,64 @@ static char *project_path(const char *relative_path) {
     return candidate;
 }
 
+static char *last_directory_path(void) {
+    char *directory = g_build_filename(
+        g_get_user_config_dir(), "labtool48uxp", NULL);
+    char *file = g_build_filename(directory, "dialogs.ini", NULL);
+    GKeyFile *settings = g_key_file_new();
+    char *stored = NULL;
+    char *result = NULL;
+    if (g_key_file_load_from_file(settings, file, G_KEY_FILE_NONE, NULL))
+        stored = g_key_file_get_string(settings, "Files", "last-directory",
+                                       NULL);
+    if (stored != NULL && g_file_test(stored, G_FILE_TEST_IS_DIR))
+        result = stored;
+    else {
+        g_free(stored);
+        const char *home = g_get_home_dir();
+        result = g_strdup(home == NULL ? "/" : home);
+    }
+    g_key_file_unref(settings);
+    g_free(file);
+    g_free(directory);
+    return result;
+}
+
+static void save_last_directory(const char *directory) {
+    char *config = g_build_filename(
+        g_get_user_config_dir(), "labtool48uxp", NULL);
+    char *file = g_build_filename(config, "dialogs.ini", NULL);
+    GKeyFile *settings = g_key_file_new();
+    if (directory != NULL && directory[0] != '\0' &&
+        g_file_test(directory, G_FILE_TEST_IS_DIR) &&
+        g_mkdir_with_parents(config, 0700) == 0) {
+        g_key_file_load_from_file(settings, file, G_KEY_FILE_NONE, NULL);
+        g_key_file_set_string(settings, "Files", "last-directory", directory);
+        g_key_file_save_to_file(settings, file, NULL);
+    }
+    g_key_file_unref(settings);
+    g_free(file);
+    g_free(config);
+}
+
+static void remember_file_directory(GFile *file) {
+    char *path = file == NULL ? NULL : g_file_get_path(file);
+    if (path != NULL) {
+        char *directory = g_path_get_dirname(path);
+        save_last_directory(directory);
+        g_free(directory);
+    }
+    g_free(path);
+}
+
+static void dialog_prepare(GtkFileDialog *dialog) {
+    char *directory = last_directory_path();
+    GFile *folder = g_file_new_for_path(directory);
+    gtk_file_dialog_set_initial_folder(dialog, folder);
+    g_object_unref(folder);
+    g_free(directory);
+}
+
 static const char *operation_availability_label(
     lt48_operation_availability availability
 ) {
@@ -5717,6 +5775,7 @@ static void programming_image_selected(
     GFile *file = gtk_file_dialog_open_finish(
         GTK_FILE_DIALOG(source), result, &error);
     if (file != NULL) {
+        remember_file_directory(file);
         char *path = g_file_get_path(file);
         if (path != NULL) {
             gtk_editable_set_text(
@@ -5744,6 +5803,7 @@ static void browse_programming_image(
     (void)button;
     gtk_file_dialog_set_title(
         dialog, "Select BIN, ROM, Intel HEX, S-record, Straight, MOS, Tektronix, or HP64000 image");
+    dialog_prepare(dialog);
     gtk_file_dialog_open(dialog, widgets->window, NULL,
                          programming_image_selected, widgets);
     g_object_unref(dialog);
@@ -6074,6 +6134,7 @@ static void cache_destination_selected(
         GTK_FILE_DIALOG(source), async_result, &error
     );
     if (destination != NULL) {
+        remember_file_directory(destination);
         const char *source_path = gtk_editable_get_text(
             GTK_EDITABLE(widgets->installation_entry)
         );
@@ -6127,6 +6188,7 @@ static void create_private_cache(GtkButton *button, gpointer user_data) {
         dialog, "Create a new private LabTool cache directory"
     );
     gtk_file_dialog_set_initial_name(dialog, "labtool48-private-cache");
+    dialog_prepare(dialog);
     gtk_file_dialog_save(dialog, widgets->database_manager_window != NULL ?
                          widgets->database_manager_window : widgets->window, NULL,
                          cache_destination_selected, widgets);
@@ -6840,7 +6902,7 @@ static void read_prepare_worker(
         g_strlcpy(result->confirmation, confirmation_hex,
                   sizeof(result->confirmation));
         result->message = g_strdup_printf(
-            "OFFLINE DRY RUN — no USB opened\n"
+            "READY — plan prepared; no USB opened yet\n"
             "%s · 0x%x + %u bytes · target %03u:%03u\n"
             "%zu transactions · %zu chunks · output %s\n"
             "Plan: %s\nManifest: %s\nConfirmation: %s\nReport: %s",
@@ -14260,6 +14322,7 @@ static void fx2_choose_finished(GObject *source, GAsyncResult *result, gpointer 
     app_widgets *widgets = data; GError *error = NULL;
     GFile *file = gtk_file_dialog_open_finish(GTK_FILE_DIALOG(source), result, &error);
     if (!file) { g_clear_error(&error); return; }
+    remember_file_directory(file);
     char *path = g_file_get_path(file), *contents = NULL; gsize size = 0;
     lt48_fx2_firmware *firmware = NULL; lt48_fx2_firmware_info info = {0};
     lt48_status status = lt48_fx2_firmware_open_hex(path, &firmware);
@@ -14289,6 +14352,7 @@ static void fx2_choose_finished(GObject *source, GAsyncResult *result, gpointer 
 static void fx2_choose(GtkButton *button, gpointer data) {
     app_widgets *widgets = data; (void)button;
     GtkFileDialog *dialog = gtk_file_dialog_new(); gtk_file_dialog_set_title(dialog, "Import your FX2 firmware HEX file");
+    dialog_prepare(dialog);
     gtk_file_dialog_open(dialog, widgets->window, NULL, fx2_choose_finished, widgets); g_object_unref(dialog);
 }
 
@@ -17458,6 +17522,7 @@ static void toolbar_load_selected(
     GFile *file = gtk_file_dialog_open_finish(
         GTK_FILE_DIALOG(source), result, &error);
     if (file != NULL) {
+        remember_file_directory(file);
         if(logic_pof_file(widgets,file,FALSE)||configuration_pof_file(widgets,file,FALSE)){g_object_unref(file);g_clear_error(&error);return;}
         if (selected_fuse_editor_available(widgets))
             open_fuse_context_action(
@@ -17524,6 +17589,7 @@ static void toolbar_load_clicked(GtkButton *button, gpointer user_data) {
     gtk_file_dialog_set_title(
         dialog, selected_fuse_editor_available(widgets) ?
             "Load JEDEC / POF fuse map" : "Load image into buffer");
+    dialog_prepare(dialog);
     load_dialog_set_initial_file(dialog, widgets);
     gtk_file_dialog_open(
         dialog, widgets->window, NULL, toolbar_load_selected, widgets);
@@ -17538,6 +17604,7 @@ static void toolbar_save_selected(
     GFile *file = gtk_file_dialog_save_finish(
         GTK_FILE_DIALOG(source), result, &error);
     if (file != NULL) {
+        remember_file_directory(file);
         if(logic_pof_file(widgets,file,TRUE)||configuration_pof_file(widgets,file,TRUE)){g_object_unref(file);g_clear_error(&error);return;}
         if (selected_fuse_editor_available(widgets)) {
             open_fuse_context_action(
@@ -17616,6 +17683,7 @@ static void toolbar_save_clicked(GtkButton *button, gpointer user_data) {
         lt48_installation_resolve_device(widgets->installation,widgets->selected_device_index,&selected)==LT48_OK && selected.catalogue.device_class==2027;
     gtk_file_dialog_set_initial_name(dialog,pof ? "fuse-map.pof" :
         selected_fuse_editor_available(widgets) ? "fuse-map.jed" : "buffer.bin");
+    dialog_prepare(dialog);
     gtk_file_dialog_save(
         dialog, widgets->window, NULL, toolbar_save_selected, widgets);
     g_object_unref(dialog);
@@ -18063,6 +18131,7 @@ static void project_save_selected(
     GFile *file = gtk_file_dialog_save_finish(
         GTK_FILE_DIALOG(source), result, &error);
     if (file != NULL) {
+        remember_file_directory(file);
         char *path = g_file_get_path(file);
         if (path != NULL) {
             size_t buffer_size = widgets->device_buffer == NULL ? 0u :
@@ -18237,6 +18306,7 @@ static void project_save_dialog(app_widgets *widgets) {
     GtkFileDialog *dialog = gtk_file_dialog_new();
     gtk_file_dialog_set_title(dialog, "Save LabTool project");
     gtk_file_dialog_set_initial_name(dialog, "labtool-project.lt48project");
+    dialog_prepare(dialog);
     gtk_file_dialog_save(
         dialog, widgets->window, NULL, project_save_selected, widgets);
     g_object_unref(dialog);
@@ -18401,6 +18471,7 @@ static void project_load_selected(
     GFile *file = gtk_file_dialog_open_finish(
         GTK_FILE_DIALOG(source), result, &error);
     if (file != NULL) {
+        remember_file_directory(file);
         char *path = g_file_get_path(file);
         if (path != NULL)
             (void)project_load_file(widgets, path, &error);
@@ -18417,6 +18488,7 @@ static void project_load_selected(
 static void project_load_dialog(app_widgets *widgets) {
     GtkFileDialog *dialog = gtk_file_dialog_new();
     gtk_file_dialog_set_title(dialog, "Load LabTool project");
+    dialog_prepare(dialog);
     gtk_file_dialog_open(
         dialog, widgets->window, NULL, project_load_selected, widgets);
     g_object_unref(dialog);
@@ -18658,6 +18730,7 @@ static void database_manager_folder_selected(
         GTK_FILE_DIALOG(source), result, &error);
     if (folder != NULL) {
         char *path = g_file_get_path(folder);
+        if (path != NULL) save_last_directory(path);
         char *canonical = path == NULL ? NULL :
             g_canonicalize_filename(path, NULL);
         if (canonical != NULL &&
@@ -18691,6 +18764,7 @@ static void database_manager_add(GtkButton *button, gpointer user_data) {
     GtkFileDialog *dialog = gtk_file_dialog_new();
     (void)button;
     gtk_file_dialog_set_title(dialog, "Add a device database directory");
+    dialog_prepare(dialog);
     gtk_file_dialog_select_folder(
         dialog, widgets->database_manager_window, NULL,
         database_manager_folder_selected, widgets);

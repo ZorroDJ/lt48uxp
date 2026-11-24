@@ -1,11 +1,11 @@
 {
-  "release": "0.1.0-test.20261123.1",
+  "release": "0.1.0-test.20261124.1",
   "target": "Ubuntu 26.04 amd64",
-  "source_upstream_commit": "80309553a941b3012f2912156526be871fda31a4",
+  "source_upstream_commit": "71bd7796ba95da23ebd3d510f9d3fb463540b37b",
   "new_device_lib": "1.0.710",
   "support_union": 15768,
-  "hardware_test_claims": "unchanged; no hardware operations for packaging",
+  "hardware_test_claims": "Echo260 and empty-socket digital672 comparisons passed2026-11-23; packaging itself performs no hardware operations.",
   "vendor_inputs_included": false,
   "source_included": true,
-  "qualification": "docs/GUI_OPERATIONS_AUDIT.md; per-device attributes in docs/SUPPORTED_DEVICES.md"
+  "qualification": "docs/SOCKET_CONTACT_CHECK.md; docs/HARDWARE_SELF_TEST.md; docs/GUI_OPERATIONS_AUDIT.md; docs/SUPPORTED_DEVICES.md"
 }

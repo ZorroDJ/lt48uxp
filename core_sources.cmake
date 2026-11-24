@@ -7,6 +7,8 @@ add_library(labtool48_core SHARED
     c/src/compact.c
     c/src/compiler.c
     c/src/configuration.c
+    c/src/contact_check.c
+    c/src/hardware_test.c
     c/src/core.c
     c/src/dac_ramp.c
     c/src/gal_pes.c

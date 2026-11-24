@@ -3,7 +3,18 @@
 #include <labtool48/labtool48.h>
 #include <assert.h>
 #include <string.h>
+static unsigned calls;
+static lt48_status no_write(void *c,uint8_t e,const unsigned char *d,size_t n,size_t *done){(void)c;(void)e;(void)d;(void)n;*done=0;++calls;return LT48_USB_ERROR;}
+static lt48_status no_read(void *c,uint8_t e,unsigned char *d,size_t n,size_t *done){(void)c;(void)e;(void)d;(void)n;*done=0;++calls;return LT48_USB_ERROR;}
+static int cancelled(void *c){(void)c;return 1;}
 int main(void) {
+ lt48_protocol_transport api={no_write,no_read,cancelled,NULL,0};
+ lt48_hardware_test_result hw;
+ assert(lt48_hardware_test_execute(LT48_HARDWARE_TEST_ECHO,NULL,0,&api,NULL,&hw)==LT48_CANCELLED);
+ assert(lt48_hardware_test_execute(LT48_HARDWARE_TEST_EMPTY_SOCKET,NULL,0,&api,NULL,&hw)==LT48_SAFETY_REJECTED);
+ lt48_contact_check_profile contact={0};lt48_contact_check_result contacts;
+ assert(lt48_contact_check_execute(&contact,&api,NULL,&contacts)==LT48_SAFETY_REJECTED);
+ assert(!calls);
  lt48_diagnostics_report report;
  assert(lt48_diagnostics_self_test(NULL, &report)==LT48_OK);
  assert(report.passed);

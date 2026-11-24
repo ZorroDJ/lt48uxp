@@ -696,6 +696,7 @@ lt48_status lt48_private_cache_import_with_runtime(
     unsigned char *idle = NULL;
     unsigned char *pof_bundle = NULL;
     size_t pof_bundle_size = 0;
+    unsigned char contact_dispatcher[476];int have_contact_dispatcher=0;
     const idle_source_profile *idle_source = NULL;
     size_t idle_size = 0u;
     char *temporary = NULL;
@@ -758,6 +759,10 @@ lt48_status lt48_private_cache_import_with_runtime(
         if(status==LT48_NOT_FOUND)status=LT48_OK;
         if(status!=LT48_OK)goto cleanup;
     }
+    status=lt48_contact_dispatcher_load_internal(runtime_source_path,contact_dispatcher);
+    if(status==LT48_OK)have_contact_dispatcher=1;
+    else if(status==LT48_NOT_FOUND)status=LT48_OK;
+    if(status!=LT48_OK)goto cleanup;
     if (strlen(destination_path) > SIZE_MAX - 12u) {
         status = LT48_INVALID_ARGUMENT;
         goto cleanup;
@@ -831,6 +836,10 @@ lt48_status lt48_private_cache_import_with_runtime(
             status = LT48_FILE_ERROR;
             goto cleanup;
         }
+    }
+    if(have_contact_dispatcher) {
+        status=add_runtime_object(temporary,"contact-dispatcher.bin",contact_dispatcher,sizeof(contact_dispatcher),manifest,&report);
+        if(status!=LT48_OK)goto cleanup;
     }
     if(pof_bundle) {
         status=add_runtime_object(temporary,"pof-runtime-13.10.bin",pof_bundle,pof_bundle_size,manifest,&report);

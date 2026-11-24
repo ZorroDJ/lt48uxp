@@ -2954,6 +2954,54 @@ LT48_API lt48_status lt48_auto_id_eprom_execute(
 /* Borrowed installation path; valid until lt48_installation_close(). */
 /* Exact catalogue identity; this does not grant device operation support. */
 LT48_API const char *lt48_installation_source_profile(const lt48_installation *installation);
+/* Selected-definition insertion check, distinct from device-ID matching.
+ * Capture uses resident47, source mask semantics and independent finalizer49.
+ * Loads the verified idle FPGA first. Alternate05 additionally requires the
+ * verified owner-supplied B000 dispatcher; neither payload is distributed.
+ * A successful check is momentary contact evidence, not electrical qualification. */
+/* Standalone diagnostics; empty-socket testing requires explicit operator
+ * confirmation and exact owned idle image. No device operation is performed. */
+typedef enum lt48_hardware_test_kind {
+    LT48_HARDWARE_TEST_ECHO = 0,
+    LT48_HARDWARE_TEST_EMPTY_SOCKET = 1
+} lt48_hardware_test_kind;
+typedef struct lt48_hardware_test_result {
+    lt48_status operation_status, cleanup_status;
+    unsigned echo_checks, pin_checks, patterns_completed;
+    unsigned failed_pattern, failed_pin, expected, observed;
+    unsigned empty_capture_completed, cleanup_completed;
+    unsigned char empty_raw[12];
+    uint64_t failed_pins;
+} lt48_hardware_test_result;
+LT48_API lt48_status lt48_hardware_test_execute(lt48_hardware_test_kind kind,
+    const unsigned char *idle, size_t idle_size,
+    const lt48_protocol_transport *transport, void *context,
+    lt48_hardware_test_result *out);
+LT48_API lt48_status lt48_programmer_hardware_test(lt48_programmer *programmer,
+    lt48_hardware_test_kind kind, const unsigned char *idle, size_t idle_size,
+    unsigned timeout_ms, lt48_hardware_test_result *out);
+LT48_API lt48_status lt48_installation_idle_fpga(const char *path,
+    unsigned char **out_data, size_t *out_size);
+
+typedef struct lt48_contact_check_profile {
+    uint32_t required[2], forbidden[2], auxiliary[2];
+    unsigned pin_count, alternate;
+    size_t idle_size, alternate_size;
+    unsigned char idle_fpga[2778], alternate_payload[476];
+} lt48_contact_check_profile;
+typedef struct lt48_contact_check_result {
+    lt48_status operation_status, cleanup_status;
+    unsigned attempted, capture_completed, cleanup_completed, matched;
+    unsigned char raw[12];
+    uint32_t observed[2], missing[2], unexpected[2];
+} lt48_contact_check_result;
+LT48_API lt48_status lt48_installation_contact_check_profile(
+    const lt48_installation *, size_t, lt48_contact_check_profile *);
+LT48_API lt48_status lt48_contact_check_execute(const lt48_contact_check_profile *,
+    const lt48_protocol_transport *, void *, lt48_contact_check_result *);
+LT48_API lt48_status lt48_programmer_check_contacts(lt48_programmer *,
+    const lt48_contact_check_profile *, unsigned, lt48_contact_check_result *);
+
 LT48_API const char *lt48_installation_path(
     const lt48_installation *installation
 );

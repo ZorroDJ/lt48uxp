@@ -290,6 +290,7 @@ typedef struct app_widgets {
     GtkWidget *report_preview;
     GtkWidget *diagnostics_installation_entry;
     GtkWidget *diagnostics_run_button;
+    gboolean hardware_test_active;
     GtkWidget *diagnostics_status;
     GtkWidget *trace_left_entry;
     GtkWidget *trace_right_entry;
@@ -347,6 +348,7 @@ typedef struct app_widgets {
     GtkWidget *jtag_adapter_entry;
     GtkWidget *jtag_revision_entry;
     GtkWidget *jtag_contacts_entry;
+    gboolean socket_contact_bypass;
     GtkWidget *jtag_power_dropdown;
     GtkWidget *jtag_vref_min_entry;
     GtkWidget *jtag_vref_max_entry;
@@ -697,6 +699,7 @@ typedef struct operation_prepare_task {
     lt48_operation_kind operation;
     unsigned pic18_authorization;
     unsigned carrier_authorization;
+    unsigned socket_contact_bypass;
     char *installation_path;
     size_t device_index;
     uint32_t start;
@@ -750,6 +753,8 @@ typedef struct operation_prepare_task {
 typedef struct operation_execute_task {
     operation_prepare_task *request;
     app_widgets *widgets;
+    char *contact_failure;
+    unsigned contacts_checked;
     uint8_t bus;
     uint8_t address;
     uint32_t timeout;
@@ -7076,6 +7081,7 @@ static void operation_execute_task_free(gpointer data) {
     operation_execute_task *task = data;
     if (task == NULL) return;
     operation_prepare_task_free(task->request);
+    g_free(task->contact_failure);
     g_free(task);
 }
 
@@ -7153,6 +7159,18 @@ static void operation_prepare_worker(
     if (status == LT48_OK)
         status = lt48_installation_resolve_device(
             installation, work->device_index, &spec);
+    if(status==LT48_OK&&!work->socket_contact_bypass) {
+        lt48_contact_check_profile contact;
+        status=lt48_installation_contact_check_profile(installation,work->device_index,&contact);
+        if(status!=LT48_OK) {
+            result->message=g_strdup_printf(
+                "Socket contact check cannot be prepared: %s. No programmer was opened. "
+                "If this definition needs the alternate check, reimport its original runtime to supply the verified helper. "
+                "An intentional fixture bypass is available under Options → Socket contact check.",
+                status==LT48_NOT_FOUND?"a required socket-check resource is missing":lt48_status_string(status));
+            goto operation_prepare_done;
+        }
+    }
     if (status == LT48_OK)
         operation_profile = lt48_installation_complete_operation_profile(installation,work->device_index);
     if (status == LT48_OK) {
@@ -8622,6 +8640,13 @@ static void operation_prepare_worker(
                 " (image size must equal the selected range)" : "");
     }
 operation_prepare_done:
+    if(status==LT48_OK&&result->message) {
+        char *prior=result->message;
+        result->message=g_strconcat(work->socket_contact_bypass?
+            "SOCKET CONTACT CHECK BYPASSED — fixture override active.\n":
+            "Socket contacts will be checked before device access.\n",prior,NULL);
+        g_free(prior);
+    }
     if (status != LT48_OK && result->message == NULL)
         result->message = g_strdup_printf("Cannot start operation: %s", lt48_status_string(status));
     if (status == LT48_OK && resources && result->message &&
@@ -8739,6 +8764,7 @@ static void start_operation_preparation(
         return;
     }
     work = g_new0(operation_prepare_task, 1);
+    work->socket_contact_bypass = widgets->socket_contact_bypass;
     work->operation = operation;
     if(operation==LT48_OPERATION_FUNCTIONAL_TEST &&
        pof_vector_snapshot(widgets,work)!=LT48_OK) {
@@ -9692,6 +9718,62 @@ static void execute_read_finished(
     ));
 }
 
+static void contact_pin_list(GString *text,const uint32_t masks[2]) {
+    gboolean comma=FALSE;
+    for(unsigned pin=1;pin<=48;pin++) {
+        unsigned side=pin>24,bit=side?pin-25:24-pin;
+        if(masks[side]&(1u<<bit)) {
+            g_string_append_printf(text,"%s%u",comma?", ":"",pin);comma=TRUE;
+        }
+    }
+    if(!comma)g_string_append(text,"none");
+}
+/* This wrapper replaces every initializer in normal GUI operation dispatch.
+ * The contact check runs on the same claimed handle before the owner starts.
+ * Settings bypass is captured in the prepared request; engine checks stay active. */
+static lt48_status operation_contact_initialize(operation_execute_task *work,
+    lt48_programmer *programmer,unsigned timeout,lt48_transport_info *ready) {
+    lt48_installation *installation=NULL;lt48_contact_check_profile profile;
+    lt48_status st=LT48_OK;
+    if(!work->request->socket_contact_bypass) {
+        st=lt48_installation_open(work->request->installation_path,&installation);
+        if(st==LT48_OK)st=lt48_installation_contact_check_profile(installation,
+            work->request->device_index,&profile);
+        lt48_installation_close(installation);
+
+        if(st!=LT48_OK) {
+            g_free(work->contact_failure);work->contact_failure=g_strdup_printf(
+                "SOCKET CHECK UNAVAILABLE: %s. No device operation started. "
+                "This definition needs an unavailable contact-check route or mask. "
+                "For an intentional fixture, use Options → Socket contact check to explicitly bypass the shared check.",
+                lt48_status_string(st));return st;
+        }
+    }
+    st=lt48_programmer_transport_initialize(programmer,timeout,ready);
+    if(st!=LT48_OK||work->request->socket_contact_bypass)return st;
+    st=lt48_programmer_set_cancel_check(programmer,gio_cancelled,work->widgets->read_cancellable);
+    lt48_contact_check_result checked={0};
+    if(st==LT48_OK) {
+        g_mutex_lock(&work->widgets->progress_mutex);
+        work->widgets->active_programmer=programmer;
+        g_mutex_unlock(&work->widgets->progress_mutex);
+        st=lt48_programmer_check_contacts(programmer,&profile,timeout,&checked);
+        g_mutex_lock(&work->widgets->progress_mutex);
+        work->widgets->active_programmer=NULL;
+        g_mutex_unlock(&work->widgets->progress_mutex);
+    }
+    if(st==LT48_OK){++work->contacts_checked;return st;}
+    GString *message=g_string_new("SOCKET CHECK FAILED — device operation stopped.\n");
+    if(checked.capture_completed) {
+        g_string_append(message,"Missing contact at ZIF pin(s): ");contact_pin_list(message,checked.missing);
+        g_string_append(message,"\nUnexpected contact at ZIF pin(s): ");contact_pin_list(message,checked.unexpected);
+        g_string_append(message,"\nCheck seating, orientation and adapter wiring. Reprepare the operation after correcting it.");
+    } else g_string_append_printf(message,"Contact acquisition: %s.",lt48_status_string(st));
+    g_string_append_printf(message,"\nContact-check cleanup: %s%s.",
+        lt48_status_string(checked.cleanup_status),checked.cleanup_completed?" (completed)":" (not completed)");
+    g_free(work->contact_failure);work->contact_failure=g_string_free(message,FALSE);return st;
+}
+
 static lt48_status execute_operation_phase(
     operation_execute_task *work, lt48_m37_resources *resources,
     const lt48_protocol_plan *plan, lt48_m37_operation operation,
@@ -9707,7 +9789,7 @@ static lt48_status execute_operation_phase(
         status = lt48_programmer_open(
             context, work->bus, work->address, &programmer);
     if (status == LT48_OK)
-        status = lt48_programmer_transport_initialize(
+        status = operation_contact_initialize(work,
             programmer, work->timeout, &ready);
     if (status == LT48_OK)
         status = lt48_programmer_set_cancel_check(
@@ -9741,7 +9823,7 @@ static lt48_status execute_eep21_erase_phase(operation_execute_task *work,lt48_m
     lt48_context *context=NULL;lt48_programmer *programmer=NULL;lt48_transport_info ready={0};lt48_small_eprom_result out={0};
     lt48_status status=lt48_context_create(&context);
     if(status==LT48_OK)status=lt48_programmer_open(context,work->bus,work->address,&programmer);
-    if(status==LT48_OK)status=lt48_programmer_transport_initialize(programmer,work->timeout,&ready);
+    if(status==LT48_OK)status=operation_contact_initialize(work, programmer,work->timeout,&ready);
     if(status==LT48_OK)status=lt48_programmer_set_cancel_check(programmer,gio_cancelled,work->widgets->read_cancellable);
     if(status==LT48_OK){g_mutex_lock(&work->widgets->progress_mutex);work->widgets->active_programmer=programmer;g_mutex_unlock(&work->widgets->progress_mutex);
         status=lt48_programmer_execute_eep21_erase(programmer,resources,work->request->start,work->request->length,work->timeout,&out);}
@@ -9763,7 +9845,7 @@ static lt48_status execute_palce_phase(
         status = lt48_programmer_open(
             context, work->bus, work->address, &programmer);
     if (status == LT48_OK)
-        status = lt48_programmer_transport_initialize(
+        status = operation_contact_initialize(work,
             programmer, work->timeout, &ready);
     if (status == LT48_OK)
         status = lt48_programmer_set_cancel_check(
@@ -9800,7 +9882,7 @@ static lt48_status execute_pal_phase(
         status = lt48_programmer_open(
             context, work->bus, work->address, &programmer);
     if (status == LT48_OK)
-        status = lt48_programmer_transport_initialize(
+        status = operation_contact_initialize(work,
             programmer, work->timeout, &ready);
     if (status == LT48_OK)
         status = lt48_programmer_set_cancel_check(
@@ -9837,7 +9919,7 @@ static lt48_status execute_pof_phase(
         status = lt48_programmer_open(
             context, work->bus, work->address, &programmer);
     if (status == LT48_OK)
-        status = lt48_programmer_transport_initialize(
+        status = operation_contact_initialize(work,
             programmer, work->timeout, &ready);
     if (status == LT48_OK)
         status = lt48_programmer_set_cancel_check(
@@ -9878,7 +9960,7 @@ static lt48_status execute_gal_phase(
         status = lt48_programmer_open(
             context, work->bus, work->address, &programmer);
     if (status == LT48_OK)
-        status = lt48_programmer_transport_initialize(
+        status = operation_contact_initialize(work,
             programmer, work->timeout, &ready);
     if (status == LT48_OK)
         status = lt48_programmer_set_cancel_check(
@@ -10004,7 +10086,7 @@ static void operation_execute_worker(
         }
         if (status == LT48_OK) status = lt48_context_create(&context);
         if (status == LT48_OK) status = lt48_programmer_open(context, work->bus, work->address, &programmer);
-        if (status == LT48_OK) status = lt48_programmer_transport_initialize(programmer, work->timeout, &ready);
+        if (status == LT48_OK) status = operation_contact_initialize(work, programmer, work->timeout, &ready);
         if (status == LT48_OK) status = lt48_programmer_set_cancel_check(programmer, gio_cancelled, work->widgets->read_cancellable);
         if (status == LT48_OK) {
             g_mutex_lock(&work->widgets->progress_mutex);
@@ -10040,7 +10122,7 @@ static void operation_execute_worker(
         }
         if (status == LT48_OK) status = lt48_context_create(&context);
         if (status == LT48_OK) status = lt48_programmer_open(context, work->bus, work->address, &programmer);
-        if (status == LT48_OK) status = lt48_programmer_transport_initialize(programmer, work->timeout, &ready);
+        if (status == LT48_OK) status = operation_contact_initialize(work, programmer, work->timeout, &ready);
         if (status == LT48_OK) status = lt48_programmer_set_cancel_check(programmer, gio_cancelled, work->widgets->read_cancellable);
         if (status == LT48_OK) {
             g_mutex_lock(&work->widgets->progress_mutex);
@@ -10082,7 +10164,7 @@ static void operation_execute_worker(
         }
         if (status == LT48_OK) status = lt48_context_create(&context);
         if (status == LT48_OK) status = lt48_programmer_open(context, work->bus, work->address, &programmer);
-        if (status == LT48_OK) status = lt48_programmer_transport_initialize(programmer, work->timeout, &ready);
+        if (status == LT48_OK) status = operation_contact_initialize(work, programmer, work->timeout, &ready);
         if (status == LT48_OK) status = lt48_programmer_set_cancel_check(programmer, gio_cancelled, work->widgets->read_cancellable);
         if (status == LT48_OK) {
             g_mutex_lock(&work->widgets->progress_mutex);
@@ -10130,7 +10212,7 @@ static void operation_execute_worker(
         }
         if (status == LT48_OK) status = lt48_context_create(&context);
         if (status == LT48_OK) status = lt48_programmer_open(context, work->bus, work->address, &programmer);
-        if (status == LT48_OK) status = lt48_programmer_transport_initialize(programmer, work->timeout, &ready);
+        if (status == LT48_OK) status = operation_contact_initialize(work, programmer, work->timeout, &ready);
         if (status == LT48_OK) status = lt48_programmer_set_cancel_check(programmer, gio_cancelled, work->widgets->read_cancellable);
         if (status == LT48_OK) {
             g_mutex_lock(&work->widgets->progress_mutex);
@@ -10171,7 +10253,7 @@ static void operation_execute_worker(
         }
         if (status == LT48_OK) status = lt48_context_create(&context);
         if (status == LT48_OK) status = lt48_programmer_open(context, work->bus, work->address, &programmer);
-        if (status == LT48_OK) status = lt48_programmer_transport_initialize(programmer, work->timeout, &ready);
+        if (status == LT48_OK) status = operation_contact_initialize(work, programmer, work->timeout, &ready);
         if (status == LT48_OK) status = lt48_programmer_set_cancel_check(programmer, gio_cancelled, work->widgets->read_cancellable);
         if (status == LT48_OK) {
             g_mutex_lock(&work->widgets->progress_mutex);
@@ -10213,7 +10295,7 @@ static void operation_execute_worker(
         }
         if (status == LT48_OK) status = lt48_context_create(&context);
         if (status == LT48_OK) status = lt48_programmer_open(context, work->bus, work->address, &programmer);
-        if (status == LT48_OK) status = lt48_programmer_transport_initialize(programmer, work->timeout, &ready);
+        if (status == LT48_OK) status = operation_contact_initialize(work, programmer, work->timeout, &ready);
         if (status == LT48_OK) status = lt48_programmer_set_cancel_check(programmer, gio_cancelled, work->widgets->read_cancellable);
         if (status == LT48_OK) {
             g_mutex_lock(&work->widgets->progress_mutex);
@@ -10261,7 +10343,7 @@ static void operation_execute_worker(
         }
         if (status == LT48_OK) status = lt48_context_create(&context);
         if (status == LT48_OK) status = lt48_programmer_open(context, work->bus, work->address, &programmer);
-        if (status == LT48_OK) status = lt48_programmer_transport_initialize(programmer, work->timeout, &ready);
+        if (status == LT48_OK) status = operation_contact_initialize(work, programmer, work->timeout, &ready);
         if (status == LT48_OK) status = lt48_programmer_set_cancel_check(programmer, gio_cancelled, work->widgets->read_cancellable);
         if (status == LT48_OK) {
             g_mutex_lock(&work->widgets->progress_mutex);
@@ -10312,7 +10394,7 @@ static void operation_execute_worker(
         }
         if (status == LT48_OK) status = lt48_context_create(&context);
         if (status == LT48_OK) status = lt48_programmer_open(context, work->bus, work->address, &programmer);
-        if (status == LT48_OK) status = lt48_programmer_transport_initialize(programmer, work->timeout, &ready);
+        if (status == LT48_OK) status = operation_contact_initialize(work, programmer, work->timeout, &ready);
         if (status == LT48_OK) status = lt48_programmer_set_cancel_check(programmer, gio_cancelled, work->widgets->read_cancellable);
         if (status == LT48_OK) {
             g_mutex_lock(&work->widgets->progress_mutex);
@@ -10354,7 +10436,7 @@ static void operation_execute_worker(
         }
         if (status == LT48_OK) status = lt48_context_create(&context);
         if (status == LT48_OK) status = lt48_programmer_open(context, work->bus, work->address, &programmer);
-        if (status == LT48_OK) status = lt48_programmer_transport_initialize(programmer, work->timeout, &ready);
+        if (status == LT48_OK) status = operation_contact_initialize(work, programmer, work->timeout, &ready);
         if (status == LT48_OK) status = lt48_programmer_set_cancel_check(programmer, gio_cancelled, work->widgets->read_cancellable);
         if (status == LT48_OK) {
             g_mutex_lock(&work->widgets->progress_mutex);
@@ -10396,7 +10478,7 @@ static void operation_execute_worker(
         }
         if (status == LT48_OK) status = lt48_context_create(&context);
         if (status == LT48_OK) status = lt48_programmer_open(context, work->bus, work->address, &programmer);
-        if (status == LT48_OK) status = lt48_programmer_transport_initialize(programmer, work->timeout, &ready);
+        if (status == LT48_OK) status = operation_contact_initialize(work, programmer, work->timeout, &ready);
         if (status == LT48_OK) status = lt48_programmer_set_cancel_check(programmer, gio_cancelled, work->widgets->read_cancellable);
         if (status == LT48_OK) {
             g_mutex_lock(&work->widgets->progress_mutex);
@@ -10438,7 +10520,7 @@ static void operation_execute_worker(
         }
         if (status == LT48_OK) status = lt48_context_create(&context);
         if (status == LT48_OK) status = lt48_programmer_open(context, work->bus, work->address, &programmer);
-        if (status == LT48_OK) status = lt48_programmer_transport_initialize(programmer, work->timeout, &ready);
+        if (status == LT48_OK) status = operation_contact_initialize(work, programmer, work->timeout, &ready);
         if (status == LT48_OK) status = lt48_programmer_set_cancel_check(programmer, gio_cancelled, work->widgets->read_cancellable);
         if (status == LT48_OK) {
             g_mutex_lock(&work->widgets->progress_mutex);
@@ -10480,7 +10562,7 @@ static void operation_execute_worker(
         }
         if (status == LT48_OK) status = lt48_context_create(&context);
         if (status == LT48_OK) status = lt48_programmer_open(context, work->bus, work->address, &programmer);
-        if (status == LT48_OK) status = lt48_programmer_transport_initialize(programmer, work->timeout, &ready);
+        if (status == LT48_OK) status = operation_contact_initialize(work, programmer, work->timeout, &ready);
         if (status == LT48_OK) status = lt48_programmer_set_cancel_check(programmer, gio_cancelled, work->widgets->read_cancellable);
         if (status == LT48_OK) {
             g_mutex_lock(&work->widgets->progress_mutex);
@@ -10522,7 +10604,7 @@ static void operation_execute_worker(
         }
         if (status == LT48_OK) status = lt48_context_create(&context);
         if (status == LT48_OK) status = lt48_programmer_open(context, work->bus, work->address, &programmer);
-        if (status == LT48_OK) status = lt48_programmer_transport_initialize(programmer, work->timeout, &ready);
+        if (status == LT48_OK) status = operation_contact_initialize(work, programmer, work->timeout, &ready);
         if (status == LT48_OK) status = lt48_programmer_set_cancel_check(programmer, gio_cancelled, work->widgets->read_cancellable);
         if (status == LT48_OK) {
             g_mutex_lock(&work->widgets->progress_mutex);
@@ -10563,7 +10645,7 @@ static void operation_execute_worker(
         }
         if (status == LT48_OK) status = lt48_context_create(&context);
         if (status == LT48_OK) status = lt48_programmer_open(context, work->bus, work->address, &programmer);
-        if (status == LT48_OK) status = lt48_programmer_transport_initialize(programmer, work->timeout, &ready);
+        if (status == LT48_OK) status = operation_contact_initialize(work, programmer, work->timeout, &ready);
         if (status == LT48_OK) status = lt48_programmer_set_cancel_check(programmer, gio_cancelled, work->widgets->read_cancellable);
         if (status == LT48_OK) {
             g_mutex_lock(&work->widgets->progress_mutex);
@@ -10602,7 +10684,7 @@ static void operation_execute_worker(
         }
         if (status == LT48_OK) status = lt48_context_create(&context);
         if (status == LT48_OK) status = lt48_programmer_open(context, work->bus, work->address, &programmer);
-        if (status == LT48_OK) status = lt48_programmer_transport_initialize(programmer, work->timeout, &ready);
+        if (status == LT48_OK) status = operation_contact_initialize(work, programmer, work->timeout, &ready);
         if (status == LT48_OK) status = lt48_programmer_set_m37_id_decision(programmer,decide_selected_device_id,work->widgets);
         if (status == LT48_OK) status = lt48_programmer_set_cancel_check(programmer, gio_cancelled, work->widgets->read_cancellable);
         if (status == LT48_OK) {
@@ -10649,7 +10731,7 @@ static void operation_execute_worker(
         }
         if (status == LT48_OK) status = lt48_context_create(&context);
         if (status == LT48_OK) status = lt48_programmer_open(context, work->bus, work->address, &programmer);
-        if (status == LT48_OK) status = lt48_programmer_transport_initialize(programmer, work->timeout, &ready);
+        if (status == LT48_OK) status = operation_contact_initialize(work, programmer, work->timeout, &ready);
         if (status == LT48_OK) status = lt48_programmer_set_m37_id_decision(programmer,decide_selected_device_id,work->widgets);
         if (status == LT48_OK) status = lt48_programmer_set_cancel_check(programmer, gio_cancelled, work->widgets->read_cancellable);
         if (status == LT48_OK) {
@@ -10689,7 +10771,7 @@ static void operation_execute_worker(
         }
         if (status == LT48_OK) status = lt48_context_create(&context);
         if (status == LT48_OK) status = lt48_programmer_open(context, work->bus, work->address, &programmer);
-        if (status == LT48_OK) status = lt48_programmer_transport_initialize(programmer, work->timeout, &ready);
+        if (status == LT48_OK) status = operation_contact_initialize(work, programmer, work->timeout, &ready);
         if (status == LT48_OK) status = lt48_programmer_set_cancel_check(programmer, gio_cancelled, work->widgets->read_cancellable);
         if (status == LT48_OK) {
             g_mutex_lock(&work->widgets->progress_mutex);
@@ -10729,7 +10811,7 @@ static void operation_execute_worker(
         }
         if (status == LT48_OK) status = lt48_context_create(&context);
         if (status == LT48_OK) status = lt48_programmer_open(context, work->bus, work->address, &programmer);
-        if (status == LT48_OK) status = lt48_programmer_transport_initialize(programmer, work->timeout, &ready);
+        if (status == LT48_OK) status = operation_contact_initialize(work, programmer, work->timeout, &ready);
         if (status == LT48_OK) status = lt48_programmer_set_cancel_check(programmer, gio_cancelled, work->widgets->read_cancellable);
         if (status == LT48_OK) {
             g_mutex_lock(&work->widgets->progress_mutex);
@@ -10758,7 +10840,7 @@ static void operation_execute_worker(
         if(status==LT48_OK && request->operation==LT48_OPERATION_READ){result->read_bytes=g_malloc(request->length);result->read_start=0;result->read_size=request->length;}
         if(status==LT48_OK)status=lt48_context_create(&context);
         if(status==LT48_OK)status=lt48_programmer_open(context,work->bus,work->address,&programmer);
-        if(status==LT48_OK)status=lt48_programmer_transport_initialize(programmer,work->timeout,&ready);
+        if(status==LT48_OK)status=operation_contact_initialize(work, programmer,work->timeout,&ready);
         if(status==LT48_OK)status=lt48_programmer_set_cancel_check(programmer,gio_cancelled,work->widgets->read_cancellable);
         if(status==LT48_OK){
             g_mutex_lock(&work->widgets->progress_mutex);work->widgets->active_programmer=programmer;g_mutex_unlock(&work->widgets->progress_mutex);
@@ -10791,7 +10873,7 @@ static void operation_execute_worker(
         }
         if (status == LT48_OK) status = lt48_context_create(&context);
         if (status == LT48_OK) status = lt48_programmer_open(context, work->bus, work->address, &programmer);
-        if (status == LT48_OK) status = lt48_programmer_transport_initialize(programmer, work->timeout, &ready);
+        if (status == LT48_OK) status = operation_contact_initialize(work, programmer, work->timeout, &ready);
         if (status == LT48_OK) status = lt48_programmer_set_cancel_check(programmer, gio_cancelled, work->widgets->read_cancellable);
         if (status == LT48_OK) {
             g_mutex_lock(&work->widgets->progress_mutex);
@@ -10834,7 +10916,7 @@ static void operation_execute_worker(
         }
         if (status == LT48_OK) status = lt48_context_create(&context);
         if (status == LT48_OK) status = lt48_programmer_open(context, work->bus, work->address, &programmer);
-        if (status == LT48_OK) status = lt48_programmer_transport_initialize(programmer, work->timeout, &ready);
+        if (status == LT48_OK) status = operation_contact_initialize(work, programmer, work->timeout, &ready);
         if (status == LT48_OK) status = lt48_programmer_set_cancel_check(programmer, gio_cancelled, work->widgets->read_cancellable);
         if (status == LT48_OK) {
             g_mutex_lock(&work->widgets->progress_mutex);
@@ -10877,7 +10959,7 @@ static void operation_execute_worker(
         }
         if (status == LT48_OK) status = lt48_context_create(&context);
         if (status == LT48_OK) status = lt48_programmer_open(context, work->bus, work->address, &programmer);
-        if (status == LT48_OK) status = lt48_programmer_transport_initialize(programmer, work->timeout, &ready);
+        if (status == LT48_OK) status = operation_contact_initialize(work, programmer, work->timeout, &ready);
         if (status == LT48_OK) status = lt48_programmer_set_cancel_check(programmer, gio_cancelled, work->widgets->read_cancellable);
         if (status == LT48_OK) {
             g_mutex_lock(&work->widgets->progress_mutex);
@@ -10920,7 +11002,7 @@ static void operation_execute_worker(
         }
         if (status == LT48_OK) status = lt48_context_create(&context);
         if (status == LT48_OK) status = lt48_programmer_open(context, work->bus, work->address, &programmer);
-        if (status == LT48_OK) status = lt48_programmer_transport_initialize(programmer, work->timeout, &ready);
+        if (status == LT48_OK) status = operation_contact_initialize(work, programmer, work->timeout, &ready);
         if (status == LT48_OK) status = lt48_programmer_set_cancel_check(programmer, gio_cancelled, work->widgets->read_cancellable);
         if (status == LT48_OK) {
             g_mutex_lock(&work->widgets->progress_mutex);
@@ -10963,7 +11045,7 @@ static void operation_execute_worker(
         }
         if (status == LT48_OK) status = lt48_context_create(&context);
         if (status == LT48_OK) status = lt48_programmer_open(context, work->bus, work->address, &programmer);
-        if (status == LT48_OK) status = lt48_programmer_transport_initialize(programmer, work->timeout, &ready);
+        if (status == LT48_OK) status = operation_contact_initialize(work, programmer, work->timeout, &ready);
         if (status == LT48_OK) status = lt48_programmer_set_cancel_check(programmer, gio_cancelled, work->widgets->read_cancellable);
         if (status == LT48_OK) {
             g_mutex_lock(&work->widgets->progress_mutex);
@@ -11006,7 +11088,7 @@ static void operation_execute_worker(
         }
         if (status == LT48_OK) status = lt48_context_create(&context);
         if (status == LT48_OK) status = lt48_programmer_open(context, work->bus, work->address, &programmer);
-        if (status == LT48_OK) status = lt48_programmer_transport_initialize(programmer, work->timeout, &ready);
+        if (status == LT48_OK) status = operation_contact_initialize(work, programmer, work->timeout, &ready);
         if (status == LT48_OK) status = lt48_programmer_set_cancel_check(programmer, gio_cancelled, work->widgets->read_cancellable);
         if (status == LT48_OK) {
             g_mutex_lock(&work->widgets->progress_mutex);
@@ -11049,7 +11131,7 @@ static void operation_execute_worker(
         }
         if (status == LT48_OK) status = lt48_context_create(&context);
         if (status == LT48_OK) status = lt48_programmer_open(context, work->bus, work->address, &programmer);
-        if (status == LT48_OK) status = lt48_programmer_transport_initialize(programmer, work->timeout, &ready);
+        if (status == LT48_OK) status = operation_contact_initialize(work, programmer, work->timeout, &ready);
         if (status == LT48_OK) status = lt48_programmer_set_cancel_check(programmer, gio_cancelled, work->widgets->read_cancellable);
         if (status == LT48_OK) {
             g_mutex_lock(&work->widgets->progress_mutex);
@@ -11092,7 +11174,7 @@ static void operation_execute_worker(
         }
         if (status == LT48_OK) status = lt48_context_create(&context);
         if (status == LT48_OK) status = lt48_programmer_open(context, work->bus, work->address, &programmer);
-        if (status == LT48_OK) status = lt48_programmer_transport_initialize(programmer, work->timeout, &ready);
+        if (status == LT48_OK) status = operation_contact_initialize(work, programmer, work->timeout, &ready);
         if (status == LT48_OK) status = lt48_programmer_set_cancel_check(programmer, gio_cancelled, work->widgets->read_cancellable);
         if (status == LT48_OK) {
             g_mutex_lock(&work->widgets->progress_mutex);
@@ -11135,7 +11217,7 @@ static void operation_execute_worker(
         }
         if (status == LT48_OK) status = lt48_context_create(&context);
         if (status == LT48_OK) status = lt48_programmer_open(context, work->bus, work->address, &programmer);
-        if (status == LT48_OK) status = lt48_programmer_transport_initialize(programmer, work->timeout, &ready);
+        if (status == LT48_OK) status = operation_contact_initialize(work, programmer, work->timeout, &ready);
         if (status == LT48_OK) status = lt48_programmer_set_cancel_check(programmer, gio_cancelled, work->widgets->read_cancellable);
         if (status == LT48_OK) {
             g_mutex_lock(&work->widgets->progress_mutex);
@@ -11178,7 +11260,7 @@ static void operation_execute_worker(
         }
         if (status == LT48_OK) status = lt48_context_create(&context);
         if (status == LT48_OK) status = lt48_programmer_open(context, work->bus, work->address, &programmer);
-        if (status == LT48_OK) status = lt48_programmer_transport_initialize(programmer, work->timeout, &ready);
+        if (status == LT48_OK) status = operation_contact_initialize(work, programmer, work->timeout, &ready);
         if (status == LT48_OK) status = lt48_programmer_set_cancel_check(programmer, gio_cancelled, work->widgets->read_cancellable);
         if (status == LT48_OK) {
             g_mutex_lock(&work->widgets->progress_mutex);
@@ -11215,7 +11297,7 @@ static void operation_execute_worker(
         }
         if (status == LT48_OK) status = lt48_context_create(&context);
         if (status == LT48_OK) status = lt48_programmer_open(context, work->bus, work->address, &programmer);
-        if (status == LT48_OK) status = lt48_programmer_transport_initialize(programmer, work->timeout, &ready);
+        if (status == LT48_OK) status = operation_contact_initialize(work, programmer, work->timeout, &ready);
         if (status == LT48_OK) status = lt48_programmer_set_cancel_check(programmer, gio_cancelled, work->widgets->read_cancellable);
         if (status == LT48_OK) {
             g_mutex_lock(&work->widgets->progress_mutex);
@@ -11254,7 +11336,7 @@ static void operation_execute_worker(
         }
         if (status == LT48_OK) status = lt48_context_create(&context);
         if (status == LT48_OK) status = lt48_programmer_open(context, work->bus, work->address, &programmer);
-        if (status == LT48_OK) status = lt48_programmer_transport_initialize(programmer, work->timeout, &ready);
+        if (status == LT48_OK) status = operation_contact_initialize(work, programmer, work->timeout, &ready);
         if (status == LT48_OK) status = lt48_programmer_set_cancel_check(programmer, gio_cancelled, work->widgets->read_cancellable);
         if (status == LT48_OK) {
             g_mutex_lock(&work->widgets->progress_mutex);
@@ -11298,7 +11380,7 @@ static void operation_execute_worker(
         }
         if (status == LT48_OK) status = lt48_context_create(&context);
         if (status == LT48_OK) status = lt48_programmer_open(context, work->bus, work->address, &programmer);
-        if (status == LT48_OK) status = lt48_programmer_transport_initialize(programmer, work->timeout, &ready);
+        if (status == LT48_OK) status = operation_contact_initialize(work, programmer, work->timeout, &ready);
         if (status == LT48_OK) status = lt48_programmer_set_cancel_check(programmer, gio_cancelled, work->widgets->read_cancellable);
         if (status == LT48_OK) {
             g_mutex_lock(&work->widgets->progress_mutex);
@@ -11364,7 +11446,7 @@ static void operation_execute_worker(
         }
         if (status == LT48_OK) status = lt48_context_create(&context);
         if (status == LT48_OK) status = lt48_programmer_open(context, work->bus, work->address, &programmer);
-        if (status == LT48_OK) status = lt48_programmer_transport_initialize(programmer, work->timeout, &ready);
+        if (status == LT48_OK) status = operation_contact_initialize(work, programmer, work->timeout, &ready);
         if (status == LT48_OK) status = lt48_programmer_set_cancel_check(programmer, gio_cancelled, work->widgets->read_cancellable);
         if (status == LT48_OK) {
             g_mutex_lock(&work->widgets->progress_mutex);
@@ -11401,7 +11483,7 @@ static void operation_execute_worker(
         }
         if (status == LT48_OK) status = lt48_context_create(&context);
         if (status == LT48_OK) status = lt48_programmer_open(context, work->bus, work->address, &programmer);
-        if (status == LT48_OK) status = lt48_programmer_transport_initialize(programmer, work->timeout, &ready);
+        if (status == LT48_OK) status = operation_contact_initialize(work, programmer, work->timeout, &ready);
         if (status == LT48_OK) status = lt48_programmer_set_cancel_check(programmer, gio_cancelled, work->widgets->read_cancellable);
         if (status == LT48_OK) {
             g_mutex_lock(&work->widgets->progress_mutex);
@@ -11439,7 +11521,7 @@ static void operation_execute_worker(
         }
         if (status == LT48_OK) status = lt48_context_create(&context);
         if (status == LT48_OK) status = lt48_programmer_open(context, work->bus, work->address, &programmer);
-        if (status == LT48_OK) status = lt48_programmer_transport_initialize(programmer, work->timeout, &ready);
+        if (status == LT48_OK) status = operation_contact_initialize(work, programmer, work->timeout, &ready);
         if (status == LT48_OK) status = lt48_programmer_set_cancel_check(programmer, gio_cancelled, work->widgets->read_cancellable);
         if (status == LT48_OK) {
             g_mutex_lock(&work->widgets->progress_mutex);
@@ -11482,7 +11564,7 @@ static void operation_execute_worker(
         }
         if (status == LT48_OK) status = lt48_context_create(&context);
         if (status == LT48_OK) status = lt48_programmer_open(context, work->bus, work->address, &programmer);
-        if (status == LT48_OK) status = lt48_programmer_transport_initialize(programmer, work->timeout, &ready);
+        if (status == LT48_OK) status = operation_contact_initialize(work, programmer, work->timeout, &ready);
         if (status == LT48_OK) status = lt48_programmer_set_cancel_check(programmer, gio_cancelled, work->widgets->read_cancellable);
         if (status == LT48_OK) {
             g_mutex_lock(&work->widgets->progress_mutex);
@@ -11519,7 +11601,7 @@ static void operation_execute_worker(
         }
         if (status == LT48_OK) status = lt48_context_create(&context);
         if (status == LT48_OK) status = lt48_programmer_open(context, work->bus, work->address, &programmer);
-        if (status == LT48_OK) status = lt48_programmer_transport_initialize(programmer, work->timeout, &ready);
+        if (status == LT48_OK) status = operation_contact_initialize(work, programmer, work->timeout, &ready);
         if (status == LT48_OK) status = lt48_programmer_set_cancel_check(programmer, gio_cancelled, work->widgets->read_cancellable);
         if (status == LT48_OK) {
             g_mutex_lock(&work->widgets->progress_mutex);
@@ -11561,7 +11643,7 @@ static void operation_execute_worker(
         }
         if (status == LT48_OK) status = lt48_context_create(&context);
         if (status == LT48_OK) status = lt48_programmer_open(context, work->bus, work->address, &programmer);
-        if (status == LT48_OK) status = lt48_programmer_transport_initialize(programmer, work->timeout, &ready);
+        if (status == LT48_OK) status = operation_contact_initialize(work, programmer, work->timeout, &ready);
         if (status == LT48_OK) status = lt48_programmer_set_cancel_check(programmer, gio_cancelled, work->widgets->read_cancellable);
         if (status == LT48_OK) {
             g_mutex_lock(&work->widgets->progress_mutex);
@@ -11600,7 +11682,7 @@ static void operation_execute_worker(
         }
         if (status == LT48_OK) status = lt48_context_create(&context);
         if (status == LT48_OK) status = lt48_programmer_open(context, work->bus, work->address, &programmer);
-        if (status == LT48_OK) status = lt48_programmer_transport_initialize(programmer, work->timeout, &ready);
+        if (status == LT48_OK) status = operation_contact_initialize(work, programmer, work->timeout, &ready);
         if (status == LT48_OK) status = lt48_programmer_set_cancel_check(programmer, gio_cancelled, work->widgets->read_cancellable);
         if (status == LT48_OK) {
             g_mutex_lock(&work->widgets->progress_mutex);
@@ -11637,7 +11719,7 @@ static void operation_execute_worker(
         }
         if (status == LT48_OK) status = lt48_context_create(&context);
         if (status == LT48_OK) status = lt48_programmer_open(context, work->bus, work->address, &programmer);
-        if (status == LT48_OK) status = lt48_programmer_transport_initialize(programmer, work->timeout, &ready);
+        if (status == LT48_OK) status = operation_contact_initialize(work, programmer, work->timeout, &ready);
         if (status == LT48_OK) status = lt48_programmer_set_cancel_check(programmer, gio_cancelled, work->widgets->read_cancellable);
         if (status == LT48_OK) {
             g_mutex_lock(&work->widgets->progress_mutex);
@@ -11674,7 +11756,7 @@ static void operation_execute_worker(
         }
         if (status == LT48_OK) status = lt48_context_create(&context);
         if (status == LT48_OK) status = lt48_programmer_open(context, work->bus, work->address, &programmer);
-        if (status == LT48_OK) status = lt48_programmer_transport_initialize(programmer, work->timeout, &ready);
+        if (status == LT48_OK) status = operation_contact_initialize(work, programmer, work->timeout, &ready);
         if (status == LT48_OK) status = lt48_programmer_set_cancel_check(programmer, gio_cancelled, work->widgets->read_cancellable);
         if (status == LT48_OK) {
             g_mutex_lock(&work->widgets->progress_mutex);
@@ -11719,7 +11801,7 @@ static void operation_execute_worker(
         }
         if (status == LT48_OK) status = lt48_context_create(&context);
         if (status == LT48_OK) status = lt48_programmer_open(context, work->bus, work->address, &programmer);
-        if (status == LT48_OK) status = lt48_programmer_transport_initialize(programmer, work->timeout, &ready);
+        if (status == LT48_OK) status = operation_contact_initialize(work, programmer, work->timeout, &ready);
         if (status == LT48_OK) status = lt48_programmer_set_cancel_check(programmer, gio_cancelled, work->widgets->read_cancellable);
         if (status == LT48_OK) {
             g_mutex_lock(&work->widgets->progress_mutex);
@@ -11763,7 +11845,7 @@ static void operation_execute_worker(
         }
         if (status == LT48_OK) status = lt48_context_create(&context);
         if (status == LT48_OK) status = lt48_programmer_open(context, work->bus, work->address, &programmer);
-        if (status == LT48_OK) status = lt48_programmer_transport_initialize(programmer, work->timeout, &ready);
+        if (status == LT48_OK) status = operation_contact_initialize(work, programmer, work->timeout, &ready);
         if (status == LT48_OK) status = lt48_programmer_set_cancel_check(programmer, gio_cancelled, work->widgets->read_cancellable);
         if (status == LT48_OK) {
             g_mutex_lock(&work->widgets->progress_mutex);
@@ -11816,7 +11898,7 @@ static void operation_execute_worker(
         }
         if (status == LT48_OK) status = lt48_context_create(&context);
         if (status == LT48_OK) status = lt48_programmer_open(context, work->bus, work->address, &programmer);
-        if (status == LT48_OK) status = lt48_programmer_transport_initialize(programmer, work->timeout, &ready);
+        if (status == LT48_OK) status = operation_contact_initialize(work, programmer, work->timeout, &ready);
         if (status == LT48_OK) status = lt48_programmer_set_cancel_check(programmer, gio_cancelled, work->widgets->read_cancellable);
         if (status == LT48_OK) {
             g_mutex_lock(&work->widgets->progress_mutex);
@@ -12141,6 +12223,14 @@ static void operation_execute_worker(
             "OVER-PROGRAM REJECTED — requested image requires a forbidden zero-to-one transition" : NULL);
     }
 operation_execute_done:
+    if(work->contact_failure) {
+        g_free(result->message);result->message=g_strdup(work->contact_failure);
+    }
+    if(work->request->socket_contact_bypass) {
+        char *prior=result->message;
+        result->message=g_strdup_printf("SOCKET CONTACT CHECK BYPASSED — fixture override active.\n%s",
+            prior?prior:lt48_status_string(status));g_free(prior);
+    }
     result->status = status;
     if (result->message == NULL)
         result->message = g_strdup_printf(
@@ -14729,6 +14819,95 @@ static void led_test_clicked(GtkButton *button, gpointer data) {
     g_task_set_task_data(task, request, g_free); g_task_run_in_thread(task, led_test_worker); g_object_unref(task);
 }
 
+typedef struct hardware_test_task {
+    programmer_init_task target;
+    lt48_hardware_test_kind kind;
+    char *installation;
+    gboolean empty_confirmed;
+} hardware_test_task;
+typedef struct hardware_test_result {
+    lt48_status status;
+    lt48_hardware_test_kind kind;
+    lt48_hardware_test_result report;
+} hardware_test_result;
+static void hardware_test_task_free(gpointer data) {
+    hardware_test_task *r=data;g_free(r->installation);g_free(r);
+}
+static void hardware_test_worker(GTask *task,gpointer source,gpointer data,GCancellable *cancel) {
+    hardware_test_task *r=data;hardware_test_result *out=g_new0(hardware_test_result,1);
+    lt48_context *ctx=NULL;lt48_programmer *p=NULL;lt48_transport_info info;
+    unsigned char *idle=NULL;size_t size=0;(void)source;out->kind=r->kind;
+    out->status=g_cancellable_is_cancelled(cancel)?LT48_CANCELLED:LT48_OK;
+    if(out->status==LT48_OK&&r->kind==LT48_HARDWARE_TEST_EMPTY_SOCKET) {
+        out->status=r->empty_confirmed?lt48_installation_idle_fpga(r->installation,&idle,&size):LT48_SAFETY_REJECTED;
+    }
+    if(out->status==LT48_OK)out->status=lt48_context_create(&ctx);
+    if(out->status==LT48_OK)out->status=lt48_programmer_open(ctx,r->target.bus,r->target.address,&p);
+    if(out->status==LT48_OK)out->status=lt48_programmer_transport_initialize(p,r->target.timeout_ms,&info);
+    if(out->status==LT48_OK)out->status=lt48_programmer_set_cancel_check(p,gio_cancelled,cancel);
+    if(out->status==LT48_OK)out->status=lt48_programmer_hardware_test(p,r->kind,idle,size,r->target.timeout_ms,&out->report);
+    lt48_programmer_close(p);lt48_context_destroy(ctx);free(idle);
+    g_task_return_pointer(task,out,g_free);
+}
+static char *hardware_test_message(const hardware_test_result *out) {
+    const lt48_hardware_test_result *r=&out->report;
+    GString *text=g_string_new(NULL);
+    g_string_append_printf(text,"%s — %s\n",out->kind==LT48_HARDWARE_TEST_ECHO?"Communication echo":"Empty-socket digital test",lt48_status_string(out->status));
+    if(out->kind==LT48_HARDWARE_TEST_ECHO) {
+        g_string_append_printf(text,"%u/260 byte comparisons. This checks communication, not socket pins or voltages.",r->echo_checks);
+        if(out->status==LT48_DEVICE_MISMATCH)g_string_append_printf(text," Expected %02X, received %02X.",r->expected,r->observed);
+    } else {
+        g_string_append_printf(text,"%u/14 patterns; %u/672 pin comparisons. Cleanup: %s.\n",r->patterns_completed,r->pin_checks,
+            r->cleanup_completed?"completed":r->cleanup_status==LT48_OK?"test not started":"FAILED");
+        if(r->failed_pins) {
+            g_string_append(text,"Failing ZIF pins: ");unsigned count=0;
+            for(unsigned pin=1;pin<=48;pin++)if(r->failed_pins&(UINT64_C(1)<<(pin-1)))g_string_append_printf(text,"%s%u",count++?", ":"",pin);
+            g_string_append_printf(text,". First mismatch: pattern %u, pin %u, expected %u, observed %u.\n",r->failed_pattern,r->failed_pin,r->expected,r->observed);
+        }
+        if(out->status==LT48_SAFETY_REJECTED&&r->empty_capture_completed)g_string_append(text,"Socket-empty guard or hardware fault check rejected the test. Remove all chips/adapters; inspect the programmer.\n");
+        g_string_append(text,"Digital drive/readback only; analogue voltage, driver strength and fixture continuity are not qualified.");
+    }
+    return g_string_free(text,FALSE);
+}
+static void hardware_test_finished(GObject *source,GAsyncResult *result,gpointer data) {
+    app_widgets *w=data;(void)source;
+    hardware_test_result *r=g_task_propagate_pointer(G_TASK(result),NULL);
+    w->programmer_initializing=0;w->hardware_test_active=FALSE;g_clear_object(&w->read_cancellable);
+    gtk_widget_set_sensitive(w->diagnostics_run_button,TRUE);
+    char *message=r?hardware_test_message(r):g_strdup("Hardware diagnostic cancelled.");
+    gtk_label_set_text(GTK_LABEL(w->diagnostics_status),message);g_free(message);g_free(r);
+}
+static void hardware_test_clicked(GtkButton *button,gpointer data) {
+    app_widgets *w=data;uint8_t bus,address;uint32_t timeout;
+    if(w->programmer_initializing||w->read_cancellable||w->active_background_tasks) {
+        gtk_label_set_text(GTK_LABEL(w->diagnostics_status),"Wait for the current task to finish before hardware diagnostics.");return;
+    }
+    lt48_hardware_test_kind kind=GPOINTER_TO_INT(g_object_get_data(G_OBJECT(button),"hardware-test-kind"));
+    GtkCheckButton *empty=g_object_get_data(G_OBJECT(button),"empty-confirmation");
+    if(kind==LT48_HARDWARE_TEST_EMPTY_SOCKET&&(!empty||!gtk_check_button_get_active(empty))) {
+        gtk_label_set_text(GTK_LABEL(w->diagnostics_status),"Remove every chip, adapter and fixture, then confirm that the ZIF socket is empty.");return;
+    }
+    if(!programmer_target(w,&bus,&address)||!entry_u32(w->programmer_timeout_entry,UINT32_MAX,&timeout)||!timeout) {
+        gtk_label_set_text(GTK_LABEL(w->diagnostics_status),"Select a programmer in Machine first.");return;
+    }
+    hardware_test_task *r=g_new0(hardware_test_task,1);
+    r->target=(programmer_init_task){bus,address,timeout};r->kind=kind;
+    r->empty_confirmed=empty&&gtk_check_button_get_active(empty);
+    r->installation=g_strdup(gtk_editable_get_text(GTK_EDITABLE(w->diagnostics_installation_entry)));
+    /* Confirmation is consumed: every socket test needs a fresh affirmation. */
+    if(empty)gtk_check_button_set_active(empty,FALSE);
+    w->programmer_initializing=1;w->hardware_test_active=TRUE;w->read_cancellable=g_cancellable_new();
+    gtk_widget_set_sensitive(w->diagnostics_run_button,FALSE);
+    gtk_label_set_text(GTK_LABEL(w->diagnostics_status),kind==LT48_HARDWARE_TEST_ECHO?"Running 260 communication echo comparisons…":"Testing all48 digital pins; keep the socket empty…");
+    GTask *task=tracked_task_new(w,w->read_cancellable,hardware_test_finished);
+    /* Return the report even on cancellation so cleanup status remains visible. */
+    g_task_set_check_cancellable(task,FALSE);
+    g_task_set_task_data(task,r,hardware_test_task_free);g_task_run_in_thread(task,hardware_test_worker);g_object_unref(task);
+}
+static void hardware_test_cancel(GtkButton *button,gpointer data) {
+    app_widgets *w=data;(void)button;if(w->hardware_test_active&&w->read_cancellable)g_cancellable_cancel(w->read_cancellable);
+}
+
 static void self_test_range_changed(
     GtkCheckButton *one_pin, gpointer user_data
 ) {
@@ -14768,8 +14947,8 @@ static GtkWidget *build_diagnostics_page(app_widgets *widgets) {
     GtkWidget *done = gtk_button_new_with_label("Done");
     GtkWidget *hardware_notice = gtk_label_new(
         "The LED test cycles Busy, Error, Good, then off. It does not drive socket "
-        "pins or change programmer identity/security data. Pin, DAC and parallel "
-        "interface tests are not yet implemented."
+        "pins or change programmer identity/security data. Empty-socket testing below "
+        "drives digital pins. DAC and parallel interface tests remain unavailable."
     );
     GtkWidget *notice = gtk_label_new(
         "This currently runs deterministic application/core checks without "
@@ -14829,6 +15008,19 @@ static GtkWidget *build_diagnostics_page(app_widgets *widgets) {
     gtk_grid_attach(GTK_GRID(hardware), driver, 1, 3, 2, 1);
     gtk_grid_attach(GTK_GRID(hardware), execute_hardware, 3, 3, 2, 1);
     gtk_grid_attach(GTK_GRID(hardware), hardware_notice, 0, 4, 5, 1);
+    GtkWidget *empty_confirm=gtk_check_button_new_with_label("ZIF socket is completely empty — no chip, adapter or fixture");
+    GtkWidget *echo_button=gtk_button_new_with_label("Test communication echo");
+    GtkWidget *socket_button=gtk_button_new_with_label("Test empty socket digital pins");
+    GtkWidget *cancel_button=gtk_button_new_with_label("Cancel diagnostic");
+    g_object_set_data(G_OBJECT(socket_button),"hardware-test-kind",GINT_TO_POINTER(LT48_HARDWARE_TEST_EMPTY_SOCKET));
+    g_object_set_data(G_OBJECT(socket_button),"empty-confirmation",empty_confirm);
+    g_signal_connect(echo_button,"clicked",G_CALLBACK(hardware_test_clicked),widgets);
+    g_signal_connect(socket_button,"clicked",G_CALLBACK(hardware_test_clicked),widgets);
+    g_signal_connect(cancel_button,"clicked",G_CALLBACK(hardware_test_cancel),widgets);
+    gtk_grid_attach(GTK_GRID(hardware),empty_confirm,0,5,5,1);
+    gtk_grid_attach(GTK_GRID(hardware),echo_button,0,6,2,1);
+    gtk_grid_attach(GTK_GRID(hardware),socket_button,2,6,2,1);
+    gtk_grid_attach(GTK_GRID(hardware),cancel_button,4,6,1,1);
     gtk_frame_set_child(GTK_FRAME(hardware_frame), hardware);
     gtk_box_append(GTK_BOX(box), hardware_frame);
     gtk_box_append(GTK_BOX(row), gtk_label_new("Installation/cache:"));
@@ -20544,6 +20736,51 @@ static void shell_action(
     }
 }
 
+static void contact_settings_apply(GtkButton *button,gpointer data) {
+    app_widgets *w=data;GtkWindow *window=GTK_WINDOW(gtk_widget_get_root(GTK_WIDGET(button)));
+    GtkCheckButton *override=g_object_get_data(G_OBJECT(window),"fixture-override");
+    gboolean bypass=gtk_check_button_get_active(override);
+    if(w->socket_contact_bypass!=bypass) {
+        w->socket_contact_bypass=bypass;invalidate_operation_preparation(w,1);
+        if(w->read_preparation)gtk_label_set_text(GTK_LABEL(w->read_preparation),bypass?
+            "SOCKET CONTACT CHECK BYPASSED for this session — fixture override. Engine safety checks remain active.":
+            "Socket contact checking enabled. Prepare the operation again.");
+    }
+    gtk_window_destroy(window);
+}
+static void contact_settings_cancel(GtkButton *button,gpointer data) {
+    (void)data;gtk_window_destroy(GTK_WINDOW(gtk_widget_get_root(GTK_WIDGET(button))));
+}
+static void contact_settings_show(GSimpleAction *action,GVariant *parameter,gpointer data) {
+    (void)action;(void)parameter;app_widgets *w=data;
+    if(w->read_cancellable) {
+        if(w->read_preparation)gtk_label_set_text(GTK_LABEL(w->read_preparation),
+            "Wait for the current operation to finish before changing socket-check settings.");
+        return;
+    }
+    GtkWindow *window=GTK_WINDOW(gtk_window_new());gtk_window_set_title(window,"Socket contact check");
+    gtk_window_set_transient_for(window,w->window);gtk_window_set_modal(window,TRUE);
+    GtkWidget *box=gtk_box_new(GTK_ORIENTATION_VERTICAL,12);
+    gtk_widget_set_margin_top(box,16);gtk_widget_set_margin_bottom(box,16);
+    gtk_widget_set_margin_start(box,16);gtk_widget_set_margin_end(box,16);
+    gtk_window_set_child(window,box);
+    GtkWidget *warning=gtk_label_new("Contact checking is enabled by default.\n"
+        "A fixture can change the expected socket contact pattern.\n"
+        "Bypassing the shared check can allow programming with a bad contact.\n"
+        "This override lasts only for the current application session.\n"
+        "Existing checks inside device engines remain active.");
+    gtk_label_set_wrap(GTK_LABEL(warning),TRUE);gtk_box_append(GTK_BOX(box),warning);
+    GtkWidget *override=gtk_check_button_new_with_label("Bypass socket contact check — intentional fixture override");
+    gtk_check_button_set_active(GTK_CHECK_BUTTON(override),w->socket_contact_bypass);
+    gtk_box_append(GTK_BOX(box),override);g_object_set_data(G_OBJECT(window),"fixture-override",override);
+    GtkWidget *buttons=gtk_box_new(GTK_ORIENTATION_HORIZONTAL,8);
+    GtkWidget *cancel=gtk_button_new_with_label("Cancel"),*apply=gtk_button_new_with_label("Apply");
+    gtk_box_append(GTK_BOX(buttons),cancel);gtk_box_append(GTK_BOX(buttons),apply);gtk_box_append(GTK_BOX(box),buttons);
+    g_signal_connect(cancel,"clicked",G_CALLBACK(contact_settings_cancel),w);
+    g_signal_connect(apply,"clicked",G_CALLBACK(contact_settings_apply),w);
+    gtk_window_present(window);
+}
+
 static GtkWidget *build_menu_bar(app_widgets *widgets) {
 #define SHELL_ACTION(action_name) \
     { .name = action_name, .activate = shell_action }
@@ -20570,6 +20807,7 @@ static GtkWidget *build_menu_bar(app_widgets *widgets) {
         SHELL_ACTION("operation"),
         SHELL_ACTION("statistic"),
         SHELL_ACTION("search-machine"),
+        { .name="socket-contact-check", .activate=contact_settings_show },
         SHELL_ACTION("self-test"),
         SHELL_ACTION("reports"),
         SHELL_ACTION("traces"),
@@ -20715,6 +20953,7 @@ static GtkWidget *build_menu_bar(app_widgets *widgets) {
     g_menu_append_submenu(root, "File", G_MENU_MODEL(file));
     g_menu_append_submenu(root, "Project", G_MENU_MODEL(project));
     g_menu_append_submenu(root, "Device", G_MENU_MODEL(device));
+    g_menu_append(options,"Socket contact check…","win.socket-contact-check");
     g_menu_append_submenu(root, "Options", G_MENU_MODEL(options));
     g_menu_append_submenu(root, "Diagnostics", G_MENU_MODEL(diagnostics));
     g_menu_append_submenu(root, "Help", G_MENU_MODEL(help));

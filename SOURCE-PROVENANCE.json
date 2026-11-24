@@ -1239,7 +1239,7 @@
     "c/apps/gtk/lpcflash_editor.inc": "c6fcfb0cb50cc9d9c6fc604a0420f1710955aa9215001f2917742ea5a681f098",
     "c/apps/gtk/lpcflash_execute.inc": "46847e972b149c89dec5dbe7a82154589a55a090fa48b75cf745d3e0d1ff9d3d",
     "c/apps/gtk/lpcflash_prepare.inc": "e398e2109ee5c4257468a1333973fcc7077d1e2982b120a60014d3b62332745b",
-    "c/apps/gtk/main.c": "1afdb399e34744cb2ffba7a3cf6a245b3fff419780d245df9711910e590e5919",
+    "c/apps/gtk/main.c": "fdf1e8722309949924c1b8ccceffe30229d4cfadd82a1e37fdea54917e5d667a",
     "c/apps/gtk/msp43076_editor.inc": "00c808491bede521ecf902c8260fbde74a90a23c420e6010a221c9c97051a8c7",
     "c/apps/gtk/n79w79_21_editor.inc": "4d29de9eb623e98dc35777bca5c52579763625cefa96e2fdef36f9a5d75ebc2a",
     "c/apps/gtk/n79w79_labels.inc": "57d4b5e99a53ca28751cee72db687b6b52c7552d92e23cca4cbbe9d40870b1a2",
@@ -1385,7 +1385,7 @@
     "c/src/hitachi.c": "efeee536436c3a8ac42d02f74659554217ab4fadb4ff125e6292f6b1f6131821",
     "c/src/host_engine.c": "0f79bf483aed8deb8324e4fed51b405227d062a79f8994cf0f5d40d01de6e760",
     "c/src/image.c": "c3c7f9f03e76ed4126d44460dae10d74706ee6580c19958b0908a8fa9735c92e",
-    "c/src/installation.c": "bb87714903854f699655b21ebdfbb616fb368c9856dff63dd2228ae8098d6788",
+    "c/src/installation.c": "07c6c6500d217c1c52234ec056ed9858fd1da43d6759a16cdc945acc183e2f22",
     "c/src/intel_byte_closures.inc": "c793f88ebbfb2cf2c8ac7b797df345f77f4b3d25e8ed7890ee05556fc80fe1b7",
     "c/src/intel_word_closures.inc": "8a6e37988ef5c0a4ac64e4349ee94af78753a75a1f5926cb01787a65965c0b1c",
     "c/src/internal.h": "40f8b17978665d8d5789a1ade232b6301beb6fd2c3242a0fedca12f5ef664e3d",
@@ -1506,6 +1506,11 @@
     "c/src/xp_shared_word_shapes.inc": "f159c5ce806834792b7ef2e800cc5a4c0ffc906404082bf5096b16e804cb1381",
     "packaging/70-labtool48.rules": "a64a9efe8041afacec8662e97d27f6f51fb0b733c0e75586ce58cbce0ff60902",
     "packaging/labtool48.desktop": "29f28c47c381e9986a20f4f405fcc87bbcaa766d2020d15ba2beffa4d070fae9",
-    "packaging/test_release.c": "f9ad3c963e043a918d8f22df5f1d4767bc0a4432c730070bf4502d4970007a8f"
-  }
+    "packaging/test_release.c": "f9ad3c963e043a918d8f22df5f1d4767bc0a4432c730070bf4502d4970007a8f",
+    "packaging/check-source.py": "4b7b53a61d6b7bedf245fc51b2d26d3ad347b4c11c8b4878d17790859fc6d65c",
+    "packaging/build-packages.py": "cb41df9c7a32f5c37e7a6468d56337136168ec8cd828ead054bc3d7676c04962"
+  },
+  "pending_next_release_changes": [
+    "2026-11-24: restore tracked project-created core.c, reject untracked package source inputs, cache immutable catalogue identity, clarify prepared-read wording; no new executable/firmware hashes admitted."
+  ]
 }

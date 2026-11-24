@@ -1,5 +1,5 @@
 {
-  "build": "0.1.0-test.20261123.1",
+  "build": "0.1.0-test.20261124.1",
   "depends": "libc6 (>= 2.38), libglib2.0-0t64 (>= 2.76.0), libgtk-4-1 (>= 4.12.0), libusb-1.0-0 (>= 2:1.0.16)",
   "checks": [
     "source build",
@@ -9,5 +9,8 @@
     "project-only install surface",
     "portable CLI launcher"
   ],
-  "hardware_operations": false
+  "hardware_operations": false,
+  "build_input_git_commit": "861293e",
+  "source_build_origin": "clean Git archive; working-tree-only files unavailable",
+  "vendor_inputs_included": false
 }

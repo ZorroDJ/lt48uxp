@@ -2,6 +2,7 @@
 Type=Application
 Name=LabTool-48UXP
 Comment=Independent device programmer frontend
+Icon=labtool48-uxp
 Exec=labtool48-gtk
 Terminal=false
 Categories=Development;Electronics;

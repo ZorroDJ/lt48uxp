@@ -165,6 +165,7 @@ lt48_status lt48_programmer_list(
             infos[found].vendor_id = descriptor.idVendor;
             infos[found].product_id = descriptor.idProduct;
             infos[found].usb_version_bcd = descriptor.bcdUSB;
+            infos[found].device_version_bcd = descriptor.bcdDevice;
             infos[found].bus_number = libusb_get_bus_number(devices[index]);
             infos[found].device_address = libusb_get_device_address(devices[index]);
             programmer_descriptor_string(devices[index],
@@ -175,7 +176,7 @@ lt48_status lt48_programmer_list(
                 sizeof(infos[found].serial_number));
             if (infos[found].model[0] == '\0')
                 snprintf(infos[found].model, sizeof(infos[found].model),
-                    "%s", lt48_programmer_descriptor_role(descriptor.idProduct));
+                    "LabTool-48UXP");
         }
         ++found;
     }
@@ -186,7 +187,8 @@ lt48_status lt48_programmer_list(
 
 lt48_status lt48_programmer_describe(
     uint8_t bus_number, uint8_t device_address,
-    char *model, size_t model_size, char *serial, size_t serial_size
+    char *model, size_t model_size, char *serial, size_t serial_size,
+    uint16_t *out_product_id, uint16_t *out_device_version_bcd
 ) {
     lt48_context *context = NULL;
     lt48_programmer_info infos[64];
@@ -197,6 +199,8 @@ lt48_status lt48_programmer_describe(
         return LT48_INVALID_ARGUMENT;
     model[0] = '\0';
     serial[0] = '\0';
+    if (out_product_id != NULL) *out_product_id = 0u;
+    if (out_device_version_bcd != NULL) *out_device_version_bcd = 0u;
     status = lt48_context_create(&context);
     if (status != LT48_OK) return status;
     status = lt48_programmer_list(
@@ -209,6 +213,10 @@ lt48_status lt48_programmer_describe(
                 infos[index].device_address != device_address) continue;
             snprintf(model, model_size, "%s", infos[index].model);
             snprintf(serial, serial_size, "%s", infos[index].serial_number);
+            if (out_product_id != NULL)
+                *out_product_id = infos[index].product_id;
+            if (out_device_version_bcd != NULL)
+                *out_device_version_bcd = infos[index].device_version_bcd;
             status = LT48_OK;
             break;
         }

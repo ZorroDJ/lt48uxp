@@ -21,6 +21,7 @@ typedef struct report_programmer_identity {
     unsigned bus_number;
     unsigned device_address;
     unsigned product_id;
+    unsigned device_version_bcd;
     int valid;
 } report_programmer_identity;
 
@@ -28,7 +29,8 @@ static _Thread_local report_programmer_identity report_programmer;
 
 void lt48_operation_report_set_programmer_identity(
     const char *model, const char *serial, unsigned bus_number,
-    unsigned device_address, unsigned product_id
+    unsigned device_address, unsigned product_id,
+    unsigned device_version_bcd
 ) {
     if (model == NULL || serial == NULL) {
         report_programmer.valid = 0;
@@ -41,6 +43,7 @@ void lt48_operation_report_set_programmer_identity(
     report_programmer.bus_number = bus_number;
     report_programmer.device_address = device_address;
     report_programmer.product_id = product_id;
+    report_programmer.device_version_bcd = device_version_bcd;
     report_programmer.valid = 1;
 }
 
@@ -721,13 +724,15 @@ static int validate_report_schema(const json_value *root) {
         if (schema_version == 3u) {
             json_value *programmer = object_find(root, "programmer");
             static const char *const programmer_fields[] = {
-                "bus", "address", "product_id", "model", "serial"
+                "bus", "address", "product_id", "device_version_bcd",
+                "model", "serial"
             };
             if (programmer->type != JSON_NULL &&
-                (!exact_fields(programmer, programmer_fields, 5u) ||
+                (!exact_fields(programmer, programmer_fields, 6u) ||
                  !is_number(object_find(programmer, "bus")) ||
                  !is_number(object_find(programmer, "address")) ||
                  !is_number(object_find(programmer, "product_id")) ||
+                 !is_number(object_find(programmer, "device_version_bcd")) ||
                  object_find(programmer, "model")->type != JSON_STRING ||
                  object_find(programmer, "serial")->type != JSON_STRING))
                 return 0;
@@ -1445,6 +1450,8 @@ static int build_report_body(
            append_u32(buffer, report_programmer.device_address) &&
            append_literal(buffer, ",\"bus\":") &&
            append_u32(buffer, report_programmer.bus_number) &&
+           append_literal(buffer, ",\"device_version_bcd\":") &&
+           append_u32(buffer, report_programmer.device_version_bcd) &&
            append_literal(buffer, ",\"model\":") &&
            append_c_string(buffer, report_programmer.model) &&
            append_literal(buffer, ",\"product_id\":") &&

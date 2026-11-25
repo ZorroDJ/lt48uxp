@@ -647,6 +647,10 @@ typedef struct programmer_init_task {
 typedef struct programmer_init_result {
     lt48_status status;
     lt48_transport_info transport;
+    uint16_t product_id;
+    uint16_t device_version_bcd;
+    char model[64];
+    char serial[64];
 } programmer_init_result;
 
 typedef struct prepared_read {
@@ -760,6 +764,7 @@ typedef struct operation_execute_task {
     uint8_t address;
     uint32_t timeout;
     unsigned product_id;
+    unsigned device_version_bcd;
     char programmer_model[64];
     char programmer_serial[64];
 } operation_execute_task;
@@ -4450,18 +4455,26 @@ static void set_programmer_target(
     if (widgets->read_address_entry != NULL)
         gtk_editable_set_text(
             GTK_EDITABLE(widgets->read_address_entry), address_text);
-    status = g_strdup("Programmer found; initializing…");
+    {
+        char model[64], serial[64];
+        uint16_t firmware = 0u;
+        (void)lt48_programmer_describe(bus, address, model, sizeof(model),
+            serial, sizeof(serial), NULL, &firmware);
+        const char *shown_model = model[0] == '\0' ? "LabTool" : model;
+        const char *shown_serial = serial[0] == '\0' ? "unknown" : serial;
+        status = firmware != 0u ?
+            g_strdup_printf("%s v%u.%02u SN %s — found; initializing…",
+                shown_model, firmware >> 8, firmware & 0xffu, shown_serial) :
+            g_strdup_printf("%s SN %s — found; initializing…",
+                shown_model, shown_serial);
+    }
     if (widgets->selected_programmer_status != NULL)
         gtk_label_set_text(
             GTK_LABEL(widgets->selected_programmer_status), status);
     if (widgets->machine_status != NULL)
         gtk_label_set_text(GTK_LABEL(widgets->machine_status), status);
-    if (widgets->footer_programmer != NULL) {
-        char *footer = g_strdup_printf(
-            "USB %u:%u — initializing", bus, address);
-        gtk_label_set_text(GTK_LABEL(widgets->footer_programmer), footer);
-        g_free(footer);
-    }
+    if (widgets->footer_programmer != NULL)
+        gtk_label_set_text(GTK_LABEL(widgets->footer_programmer), status);
     if (changed && widgets->read_preparation != NULL &&
         widgets->read_cancellable == NULL)
         gtk_label_set_text(
@@ -4537,6 +4550,10 @@ static void programmer_init_worker(
     lt48_programmer *programmer = NULL;
     (void)source_object;
     (void)cancellable;
+    (void)lt48_programmer_describe(request->bus, request->address,
+        result->model, sizeof(result->model), result->serial,
+        sizeof(result->serial), &result->product_id,
+        &result->device_version_bcd);
     result->status = lt48_context_create(&context);
     if (result->status == LT48_OK)
         result->status = lt48_programmer_open(
@@ -4549,6 +4566,16 @@ static void programmer_init_worker(
     lt48_programmer_close(programmer);
     lt48_context_destroy(context);
     g_task_return_pointer(task, result, g_free);
+}
+
+static char *programmer_ready_text(const programmer_init_result *result) {
+    const char *model = result->model[0] == '\0' ? "LabTool" : result->model;
+    const char *serial = result->serial[0] == '\0' ? "unknown" : result->serial;
+    if (result->device_version_bcd != 0u)
+        return g_strdup_printf("%s v%u.%02u SN %s — programmer ready",
+            model, result->device_version_bcd >> 8,
+            result->device_version_bcd & 0xffu, serial);
+    return g_strdup_printf("%s SN %s — programmer ready", model, serial);
 }
 
 static void programmer_init_finished(
@@ -4572,19 +4599,21 @@ static void programmer_init_finished(
         int pending = widgets->pending_hardware_action;
         widgets->pending_hardware_action = PENDING_HARDWARE_NONE;
         widgets->programmer_ready = 1;
-        message = g_strdup_printf(
-            "Programmer ready (transport acknowledgements %02x/%02x).",
-            result->transport.packet_size_ack,
-            result->transport.mode_ack
-        );
+        message = programmer_ready_text(result);
         if (widgets->selected_programmer_status != NULL)
             gtk_label_set_text(
-                GTK_LABEL(widgets->selected_programmer_status),
-                "Programmer ready");
+                GTK_LABEL(widgets->selected_programmer_status), message);
         if (widgets->machine_status != NULL)
-            gtk_label_set_text(GTK_LABEL(widgets->machine_status),
-                               "Programmer ready");
-        gtk_label_set_text(GTK_LABEL(widgets->programmer_status), message);
+            gtk_label_set_text(GTK_LABEL(widgets->machine_status), message);
+        if (widgets->footer_programmer != NULL)
+            gtk_label_set_text(GTK_LABEL(widgets->footer_programmer), message);
+        {
+            char *detail = g_strdup_printf(
+                "%s (transport acknowledgements %02x/%02x).", message,
+                result->transport.packet_size_ack, result->transport.mode_ack);
+            gtk_label_set_text(GTK_LABEL(widgets->programmer_status), detail);
+            g_free(detail);
+        }
         g_free(message);
         g_free(result);
         if (pending == PENDING_HARDWARE_PREPARE_READ)
@@ -10141,7 +10170,8 @@ static void operation_execute_worker(
     operation_execute_result *result = g_new0(operation_execute_result, 1);
     lt48_operation_report_set_programmer_identity(
         work->programmer_model, work->programmer_serial,
-        work->bus, work->address, work->product_id);
+        work->bus, work->address, work->product_id,
+        work->device_version_bcd);
     lt48_installation *installation = NULL;
     const char *operation_profile = "unclassified";
     lt48_gal_resources *gal_resources = NULL;
@@ -12535,9 +12565,12 @@ static void execute_prepared_operation(app_widgets *widgets) {
     work->address = address;
     work->timeout = timeout;
     work->product_id = widgets->selected_programmer_product_id;
+    uint16_t described_product = 0u;
     (void)lt48_programmer_describe(bus, address, work->programmer_model,
         sizeof(work->programmer_model), work->programmer_serial,
-        sizeof(work->programmer_serial));
+        sizeof(work->programmer_serial), &described_product,
+        (uint16_t *)&work->device_version_bcd);
+    if (described_product != 0u) work->product_id = described_product;
     if (work->request == NULL) {
         operation_execute_task_free(work);
         gtk_label_set_text(GTK_LABEL(widgets->read_preparation),

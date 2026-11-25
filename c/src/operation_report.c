@@ -18,6 +18,7 @@
 typedef struct report_programmer_identity {
     char model[64];
     char serial[64];
+    char firmware_version[32];
     unsigned bus_number;
     unsigned device_address;
     unsigned product_id;
@@ -28,7 +29,8 @@ typedef struct report_programmer_identity {
 static _Thread_local report_programmer_identity report_programmer;
 
 void lt48_operation_report_set_programmer_identity(
-    const char *model, const char *serial, unsigned bus_number,
+    const char *model, const char *serial, const char *firmware_version,
+    unsigned bus_number,
     unsigned device_address, unsigned product_id,
     unsigned device_version_bcd
 ) {
@@ -40,6 +42,9 @@ void lt48_operation_report_set_programmer_identity(
              "%s", model);
     snprintf(report_programmer.serial, sizeof(report_programmer.serial),
              "%s", serial);
+    snprintf(report_programmer.firmware_version,
+             sizeof(report_programmer.firmware_version), "%s",
+             firmware_version == NULL ? "" : firmware_version);
     report_programmer.bus_number = bus_number;
     report_programmer.device_address = device_address;
     report_programmer.product_id = product_id;
@@ -702,6 +707,7 @@ static int validate_report_schema(const json_value *root) {
     if (string_equal(&schema->value.text, "1")) schema_version = 1u;
     else if (string_equal(&schema->value.text, "2")) schema_version = 2u;
     else if (string_equal(&schema->value.text, "3")) schema_version = 3u;
+    else if (string_equal(&schema->value.text, "4")) schema_version = 4u;
     else return 0;
     if (schema_version == 1u) {
         if (!exact_fields(root, root_fields_v1,
@@ -710,10 +716,10 @@ static int validate_report_schema(const json_value *root) {
     } else {
         json_value *range;
         if (!exact_fields(root,
-                          schema_version == 3u ? root_fields_v3 : root_fields_v2,
+                          schema_version >= 3u ? root_fields_v3 : root_fields_v2,
                           sizeof(root_fields_v2) /
                           sizeof(root_fields_v2[0]) +
-                              (schema_version == 3u ? 1u : 0u))) return 0;
+                              (schema_version >= 3u ? 1u : 0u))) return 0;
         range = object_find(root, "address_range");
         if (!exact_fields(range, range_fields, 2u) ||
             !is_number(object_find(range, "start")) ||
@@ -721,18 +727,26 @@ static int validate_report_schema(const json_value *root) {
             !is_bool(object_find(root, "mismatch_override")) ||
             !is_bool(object_find(root, "cancelled")) ||
             !is_string_or_null(object_find(root, "observed_result"))) return 0;
-        if (schema_version == 3u) {
+        if (schema_version >= 3u) {
             json_value *programmer = object_find(root, "programmer");
             static const char *const programmer_fields[] = {
                 "bus", "address", "product_id", "device_version_bcd",
                 "model", "serial"
             };
+            static const char *const programmer_fields_v4[] = {
+                "bus", "address", "product_id", "device_version_bcd",
+                "firmware_version", "model", "serial"
+            };
             if (programmer->type != JSON_NULL &&
-                (!exact_fields(programmer, programmer_fields, 6u) ||
+                (!exact_fields(programmer,
+                    schema_version == 4u ? programmer_fields_v4 : programmer_fields,
+                    schema_version == 4u ? 7u : 6u) ||
                  !is_number(object_find(programmer, "bus")) ||
                  !is_number(object_find(programmer, "address")) ||
                  !is_number(object_find(programmer, "product_id")) ||
                  !is_number(object_find(programmer, "device_version_bcd")) ||
+                 (schema_version == 4u &&
+                  object_find(programmer, "firmware_version")->type != JSON_STRING) ||
                  object_find(programmer, "model")->type != JSON_STRING ||
                  object_find(programmer, "serial")->type != JSON_STRING))
                 return 0;
@@ -1452,6 +1466,8 @@ static int build_report_body(
            append_u32(buffer, report_programmer.bus_number) &&
            append_literal(buffer, ",\"device_version_bcd\":") &&
            append_u32(buffer, report_programmer.device_version_bcd) &&
+           append_literal(buffer, ",\"firmware_version\":") &&
+           append_c_string(buffer, report_programmer.firmware_version) &&
            append_literal(buffer, ",\"model\":") &&
            append_c_string(buffer, report_programmer.model) &&
            append_literal(buffer, ",\"product_id\":") &&
@@ -1467,7 +1483,7 @@ static int build_report_body(
         !append_literal(buffer, ",\"run_id\":") ||
         !append_c_string(buffer, run_id) ||
         !append_literal(buffer,
-            ",\"schema_version\":3,\"session_events\":[],"
+            ",\"schema_version\":4,\"session_events\":[],"
             "\"started_at_utc\":") ||
         !append_c_string(buffer, started_at) ||
         !append_literal(buffer, ",\"status\":") ||

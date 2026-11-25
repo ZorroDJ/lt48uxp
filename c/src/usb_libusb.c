@@ -174,9 +174,6 @@ lt48_status lt48_programmer_list(
             programmer_descriptor_string(devices[index],
                 descriptor.iSerialNumber, infos[found].serial_number,
                 sizeof(infos[found].serial_number));
-            if (infos[found].model[0] == '\0')
-                snprintf(infos[found].model, sizeof(infos[found].model),
-                    "LabTool-48UXP");
         }
         ++found;
     }
@@ -3679,4 +3676,3 @@ lt48_status lt48_programmer_execute_rs08(
         programmer, LT48_EXECUTION_COMPLETE, 0u, 0u, 1u, 1u, 1u);
     return status;
 }
-

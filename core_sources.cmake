@@ -153,5 +153,6 @@ add_library(labtool48_core SHARED
     c/src/test_vectors.c
     c/src/trace.c
     c/src/usb_libusb.c
+    c/src/reader_identity.c
 )
 target_sources(labtool48_core PRIVATE c/src/eep21_erase.c)

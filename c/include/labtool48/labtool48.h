@@ -879,6 +879,13 @@ typedef struct lt48_transport_info {
     uint8_t mode_ack;
 } lt48_transport_info;
 
+typedef struct lt48_reader_identity {
+    char model[64];
+    char firmware_version[32];
+    char serial[16];
+    lt48_status serial_status;
+} lt48_reader_identity;
+
 typedef struct lt48_fx2_firmware_info {
     size_t record_count;
     size_t payload_size;
@@ -2173,6 +2180,14 @@ LT48_API lt48_status lt48_programmer_open(
     lt48_programmer **out_programmer
 );
 LT48_API void lt48_programmer_close(lt48_programmer *programmer);
+
+/* Reads the monitor banner from the claimed reader. The optional, verified
+ * original security-info applet reads the serial without a licence check.
+ * A missing applet leaves serial empty and serial_status=LT48_NOT_FOUND. */
+LT48_API lt48_status lt48_programmer_identify(
+    lt48_programmer *programmer, const char *serial_applet_path,
+    unsigned timeout_ms, lt48_reader_identity *out_identity
+);
 
 /*
  * Perform only the two proved 4.20 transport initialization exchanges. The
@@ -4274,7 +4289,8 @@ LT48_API lt48_status lt48_jtag_validate_target_profile(
 
 /* Strict supported-schema, payload-free operation-report inspection. */
 LT48_API void lt48_operation_report_set_programmer_identity(
-    const char *model, const char *serial, unsigned bus_number,
+    const char *model, const char *serial, const char *firmware_version,
+    unsigned bus_number,
     unsigned device_address, unsigned product_id,
     unsigned device_version_bcd
 );

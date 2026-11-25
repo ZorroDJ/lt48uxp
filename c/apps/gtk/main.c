@@ -435,6 +435,10 @@ typedef struct app_widgets {
     uint8_t selected_programmer_address;
     uint16_t selected_programmer_product_id;
     int has_selected_programmer;
+    lt48_reader_identity reader_identity;
+    uint8_t identity_bus;
+    uint8_t identity_address;
+    int has_reader_identity;
     int programmer_ready;
     int programmer_initializing;
     int operation_model_refreshing;
@@ -642,15 +646,16 @@ typedef struct programmer_init_task {
     uint8_t bus;
     uint8_t address;
     uint32_t timeout_ms;
+    char *serial_applet_path;
 } programmer_init_task;
 
 typedef struct programmer_init_result {
     lt48_status status;
+    lt48_status identity_status;
     lt48_transport_info transport;
-    uint16_t product_id;
-    uint16_t device_version_bcd;
-    char model[64];
-    char serial[64];
+    uint8_t bus;
+    uint8_t address;
+    lt48_reader_identity identity;
 } programmer_init_result;
 
 typedef struct prepared_read {
@@ -767,6 +772,7 @@ typedef struct operation_execute_task {
     unsigned device_version_bcd;
     char programmer_model[64];
     char programmer_serial[64];
+    char programmer_firmware[32];
 } operation_execute_task;
 
 typedef struct operation_execute_result {
@@ -4441,6 +4447,7 @@ static void set_programmer_target(
     if (changed) {
         widgets->programmer_ready = 0;
         widgets->automatic_fx2_attempted = 0;
+        widgets->has_reader_identity = 0;
     }
     g_snprintf(bus_text, sizeof(bus_text), "%u", bus);
     g_snprintf(address_text, sizeof(address_text), "%u", address);
@@ -4455,17 +4462,7 @@ static void set_programmer_target(
     if (widgets->read_address_entry != NULL)
         gtk_editable_set_text(
             GTK_EDITABLE(widgets->read_address_entry), address_text);
-    {
-        char model[64], serial[64];
-        uint16_t firmware = 0u;
-        (void)lt48_programmer_describe(bus, address, model, sizeof(model),
-            serial, sizeof(serial), NULL, &firmware);
-        const char *shown_model = model[0] == '\0' ? "LabTool" : model;
-        status = firmware != 0u ?
-            g_strdup_printf("%s v%u.%02u — found; initializing…",
-                shown_model, firmware >> 8, firmware & 0xffu) :
-            g_strdup_printf("%s — found; initializing…", shown_model);
-    }
+    status = g_strdup_printf("USB %u:%u — identifying reader…", bus, address);
     if (widgets->selected_programmer_status != NULL)
         gtk_label_set_text(
             GTK_LABEL(widgets->selected_programmer_status), status);
@@ -4485,6 +4482,7 @@ static void set_programmer_target(
 static void clear_programmer_target(app_widgets *widgets) {
     widgets->has_selected_programmer = 0;
     widgets->programmer_ready = 0;
+    widgets->has_reader_identity = 0;
     widgets->automatic_fx2_attempted = 0;
     widgets->selected_programmer_product_id = 0u;
     if (widgets->programmer_bus_entry != NULL)
@@ -4548,15 +4546,18 @@ static void programmer_init_worker(
     lt48_programmer *programmer = NULL;
     (void)source_object;
     (void)cancellable;
-    (void)lt48_programmer_describe(request->bus, request->address,
-        result->model, sizeof(result->model), result->serial,
-        sizeof(result->serial), &result->product_id,
-        &result->device_version_bcd);
+    result->bus = request->bus;
+    result->address = request->address;
+    result->identity_status = LT48_NOT_FOUND;
     result->status = lt48_context_create(&context);
     if (result->status == LT48_OK)
         result->status = lt48_programmer_open(
             context, request->bus, request->address, &programmer
         );
+    if (result->status == LT48_OK)
+        result->identity_status = lt48_programmer_identify(
+            programmer, request->serial_applet_path, request->timeout_ms,
+            &result->identity);
     if (result->status == LT48_OK)
         result->status = lt48_programmer_transport_initialize(
             programmer, request->timeout_ms, &result->transport
@@ -4566,13 +4567,29 @@ static void programmer_init_worker(
     g_task_return_pointer(task, result, g_free);
 }
 
-static char *programmer_ready_text(const programmer_init_result *result) {
-    const char *model = result->model[0] == '\0' ? "LabTool" : result->model;
-    if (result->device_version_bcd != 0u)
-        return g_strdup_printf("%s v%u.%02u — programmer ready",
-            model, result->device_version_bcd >> 8,
-            result->device_version_bcd & 0xffu);
-    return g_strdup_printf("%s — programmer ready", model);
+static char *programmer_identity_text(const programmer_init_result *result) {
+    if (result->identity_status != LT48_OK)
+        return g_strdup("Live reader identity unavailable");
+    if (result->identity.serial_status == LT48_OK)
+        return g_strdup_printf("%s firmware %s SN %s",
+            result->identity.model, result->identity.firmware_version,
+            result->identity.serial);
+    return g_strdup_printf("%s firmware %s — serial unavailable",
+        result->identity.model, result->identity.firmware_version);
+}
+
+static void programmer_init_task_free(gpointer data) {
+    programmer_init_task *request = data;
+    if (request == NULL) return;
+    g_free(request->serial_applet_path);
+    g_free(request);
+}
+
+static char *reader_applet_path(void) {
+    const char *configured = g_getenv("LABTOOL48_IDENTITY_APPLET");
+    return configured != NULL && configured[0] != '\0' ?
+        g_strdup(configured) : g_build_filename(
+            g_get_user_config_dir(), "labtool48uxp", "identity-applet.bin", NULL);
 }
 
 static void programmer_init_finished(
@@ -4592,11 +4609,22 @@ static void programmer_init_finished(
                            "Transport readiness did not return a result");
         return;
     }
+    if (result->identity_status == LT48_OK &&
+        widgets->has_selected_programmer &&
+        widgets->selected_programmer_bus == result->bus &&
+        widgets->selected_programmer_address == result->address) {
+        widgets->reader_identity = result->identity;
+        widgets->identity_bus = widgets->selected_programmer_bus;
+        widgets->identity_address = widgets->selected_programmer_address;
+        widgets->has_reader_identity = 1;
+    }
     if (result->status == LT48_OK) {
         int pending = widgets->pending_hardware_action;
         widgets->pending_hardware_action = PENDING_HARDWARE_NONE;
         widgets->programmer_ready = 1;
-        message = programmer_ready_text(result);
+        char *identity = programmer_identity_text(result);
+        message = g_strdup_printf("%s — programmer ready", identity);
+        g_free(identity);
         if (widgets->selected_programmer_status != NULL)
             gtk_label_set_text(
                 GTK_LABEL(widgets->selected_programmer_status), message);
@@ -4631,15 +4659,22 @@ static void programmer_init_finished(
             widgets->pending_hardware_action != PENDING_HARDWARE_NONE;
         widgets->pending_hardware_action = PENDING_HARDWARE_NONE;
         widgets->programmer_ready = 0;
-        message = g_strdup_printf(
-            "Programmer initialization failed: %s.",
-            lt48_status_string(result->status)
-        );
+        if (result->identity_status == LT48_OK) {
+            char *identity = programmer_identity_text(result);
+            message = g_strdup_printf("%s — initialization failed: %s",
+                identity, lt48_status_string(result->status));
+            g_free(identity);
+        } else
+            message = g_strdup_printf("Programmer initialization failed: %s.",
+                lt48_status_string(result->status));
         if (widgets->selected_programmer_status != NULL)
             gtk_label_set_text(
                 GTK_LABEL(widgets->selected_programmer_status), message);
         if (widgets->machine_status != NULL)
             gtk_label_set_text(GTK_LABEL(widgets->machine_status), message);
+        if (widgets->footer_programmer != NULL &&
+            result->identity_status == LT48_OK)
+            gtk_label_set_text(GTK_LABEL(widgets->footer_programmer), message);
         if (had_pending && widgets->read_preparation != NULL)
             gtk_label_set_text(GTK_LABEL(widgets->read_preparation), message);
     }
@@ -4668,8 +4703,9 @@ static void programmer_initialize(GtkButton *button, gpointer user_data) {
     request->bus = bus;
     request->address = address;
     request->timeout_ms = timeout;
+    request->serial_applet_path = reader_applet_path();
     task = tracked_task_new(widgets, NULL, programmer_init_finished);
-    g_task_set_task_data(task, request, g_free);
+    g_task_set_task_data(task, request, programmer_init_task_free);
     gtk_widget_set_sensitive(widgets->programmer_initialize_button, FALSE);
     widgets->programmer_ready = 0;
     widgets->programmer_initializing = 1;
@@ -10166,7 +10202,8 @@ static void operation_execute_worker(
     operation_prepare_task *request = work->request;
     operation_execute_result *result = g_new0(operation_execute_result, 1);
     lt48_operation_report_set_programmer_identity(
-        work->programmer_model, work->programmer_serial,
+        work->programmer_model[0] == '\0' ? NULL : work->programmer_model,
+        work->programmer_serial, work->programmer_firmware,
         work->bus, work->address, work->product_id,
         work->device_version_bcd);
     lt48_installation *installation = NULL;
@@ -12563,11 +12600,24 @@ static void execute_prepared_operation(app_widgets *widgets) {
     work->timeout = timeout;
     work->product_id = widgets->selected_programmer_product_id;
     uint16_t described_product = 0u;
-    (void)lt48_programmer_describe(bus, address, work->programmer_model,
-        sizeof(work->programmer_model), work->programmer_serial,
-        sizeof(work->programmer_serial), &described_product,
-        (uint16_t *)&work->device_version_bcd);
+    uint16_t described_version = 0u;
+    char descriptor_model[64], descriptor_serial[64];
+    (void)lt48_programmer_describe(bus, address, descriptor_model,
+        sizeof(descriptor_model), descriptor_serial,
+        sizeof(descriptor_serial), &described_product, &described_version);
+    work->device_version_bcd = described_version;
     if (described_product != 0u) work->product_id = described_product;
+    if (widgets->has_reader_identity && widgets->identity_bus == bus &&
+        widgets->identity_address == address) {
+        g_strlcpy(work->programmer_model, widgets->reader_identity.model,
+                  sizeof(work->programmer_model));
+        g_strlcpy(work->programmer_firmware,
+                  widgets->reader_identity.firmware_version,
+                  sizeof(work->programmer_firmware));
+        if (widgets->reader_identity.serial_status == LT48_OK)
+            g_strlcpy(work->programmer_serial, widgets->reader_identity.serial,
+                      sizeof(work->programmer_serial));
+    }
     if (work->request == NULL) {
         operation_execute_task_free(work);
         gtk_label_set_text(GTK_LABEL(widgets->read_preparation),
@@ -15075,7 +15125,7 @@ static void hardware_test_clicked(GtkButton *button,gpointer data) {
         gtk_label_set_text(GTK_LABEL(w->diagnostics_status),"Select a programmer in Machine first.");return;
     }
     hardware_test_task *r=g_new0(hardware_test_task,1);
-    r->target=(programmer_init_task){bus,address,timeout};r->kind=kind;
+    r->target=(programmer_init_task){.bus=bus,.address=address,.timeout_ms=timeout};r->kind=kind;
     r->empty_confirmed=empty&&gtk_check_button_get_active(empty);
     r->installation=g_strdup(gtk_editable_get_text(GTK_EDITABLE(w->diagnostics_installation_entry)));
     /* Confirmation is consumed: every socket test needs a fresh affirmation. */

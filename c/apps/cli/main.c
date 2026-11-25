@@ -3556,6 +3556,8 @@ static int programmer_read_m37(int argc, char **argv) {
     lt48_cleanup_result finalization[12];
     lt48_m37_snapshot_read_execution_result execution = {0};
     lt48_m37_read_preparation preparation;
+    lt48_reader_identity reader_identity = {0};
+    int has_reader_identity = 0;
     unsigned char plan_digest[LT48_SHA256_SIZE];
     unsigned char confirmation_digest[LT48_SHA256_SIZE] = {0};
     unsigned char recovery_digest[3][LT48_SHA256_SIZE] = {{0}};
@@ -3769,6 +3771,9 @@ static int programmer_read_m37(int argc, char **argv) {
     if (status != LT48_OK) goto hardware_fail;
     status = lt48_programmer_open(context, bus, address, &programmer);
     if (status != LT48_OK) goto hardware_fail;
+    has_reader_identity = lt48_programmer_identify(programmer,
+        getenv("LABTOOL48_IDENTITY_APPLET"), (unsigned)parsed_timeout,
+        &reader_identity) == LT48_OK;
     {
         lt48_transport_info ready_info = {0};
         status = lt48_programmer_transport_initialize(
@@ -3840,16 +3845,20 @@ cleanup:
     if (execution_authorized) {
         lt48_status report_status;
         lt48_status command_status = result == 0 ? LT48_OK : status;
-        char report_model[64];
-        char report_serial[64];
+        char descriptor_model[64];
+        char descriptor_serial[64];
         uint16_t report_product = 0u;
         uint16_t report_firmware = 0u;
-        (void)lt48_programmer_describe(bus, address, report_model,
-            sizeof(report_model), report_serial, sizeof(report_serial),
+        (void)lt48_programmer_describe(bus, address, descriptor_model,
+            sizeof(descriptor_model), descriptor_serial,
+            sizeof(descriptor_serial),
             &report_product, &report_firmware);
         lt48_operation_report_set_programmer_identity(
-            report_model, report_serial, bus, address, report_product,
-            report_firmware);
+            has_reader_identity ? reader_identity.model : NULL,
+            has_reader_identity && reader_identity.serial_status == LT48_OK ?
+                reader_identity.serial : "",
+            has_reader_identity ? reader_identity.firmware_version : NULL,
+            bus, address, report_product, report_firmware);
         if (execution.finalization_phase_count == 0u &&
             execution.operation_status == LT48_OK &&
             command_status != LT48_OK)

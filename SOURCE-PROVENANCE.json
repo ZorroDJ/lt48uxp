@@ -1239,7 +1239,7 @@
     "c/apps/gtk/lpcflash_editor.inc": "c6fcfb0cb50cc9d9c6fc604a0420f1710955aa9215001f2917742ea5a681f098",
     "c/apps/gtk/lpcflash_execute.inc": "46847e972b149c89dec5dbe7a82154589a55a090fa48b75cf745d3e0d1ff9d3d",
     "c/apps/gtk/lpcflash_prepare.inc": "e398e2109ee5c4257468a1333973fcc7077d1e2982b120a60014d3b62332745b",
-    "c/apps/gtk/main.c": "dab0bc4dcf30a2bc97388b119bad5e7ef1b47e0a13cf8a56086f96768eaa68ba",
+    "c/apps/gtk/main.c": "b1a1a1940eb8033d9cba6af24a5b8914c6102234d7e86b4847484ab2ebcf04fd",
     "c/apps/gtk/msp43076_editor.inc": "00c808491bede521ecf902c8260fbde74a90a23c420e6010a221c9c97051a8c7",
     "c/apps/gtk/n79w79_21_editor.inc": "4d29de9eb623e98dc35777bca5c52579763625cefa96e2fdef36f9a5d75ebc2a",
     "c/apps/gtk/n79w79_labels.inc": "57d4b5e99a53ca28751cee72db687b6b52c7552d92e23cca4cbbe9d40870b1a2",

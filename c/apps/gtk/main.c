@@ -4461,12 +4461,10 @@ static void set_programmer_target(
         (void)lt48_programmer_describe(bus, address, model, sizeof(model),
             serial, sizeof(serial), NULL, &firmware);
         const char *shown_model = model[0] == '\0' ? "LabTool" : model;
-        const char *shown_serial = serial[0] == '\0' ? "unknown" : serial;
         status = firmware != 0u ?
-            g_strdup_printf("%s v%u.%02u SN %s — found; initializing…",
-                shown_model, firmware >> 8, firmware & 0xffu, shown_serial) :
-            g_strdup_printf("%s SN %s — found; initializing…",
-                shown_model, shown_serial);
+            g_strdup_printf("%s v%u.%02u — found; initializing…",
+                shown_model, firmware >> 8, firmware & 0xffu) :
+            g_strdup_printf("%s — found; initializing…", shown_model);
     }
     if (widgets->selected_programmer_status != NULL)
         gtk_label_set_text(
@@ -4570,12 +4568,11 @@ static void programmer_init_worker(
 
 static char *programmer_ready_text(const programmer_init_result *result) {
     const char *model = result->model[0] == '\0' ? "LabTool" : result->model;
-    const char *serial = result->serial[0] == '\0' ? "unknown" : result->serial;
     if (result->device_version_bcd != 0u)
-        return g_strdup_printf("%s v%u.%02u SN %s — programmer ready",
+        return g_strdup_printf("%s v%u.%02u — programmer ready",
             model, result->device_version_bcd >> 8,
-            result->device_version_bcd & 0xffu, serial);
-    return g_strdup_printf("%s SN %s — programmer ready", model, serial);
+            result->device_version_bcd & 0xffu);
+    return g_strdup_printf("%s — programmer ready", model);
 }
 
 static void programmer_init_finished(

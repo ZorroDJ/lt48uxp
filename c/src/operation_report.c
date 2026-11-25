@@ -1459,7 +1459,7 @@ static int build_report_body(
             return 0;
     }
     if (!append_literal(buffer, "],\"programmer\":") ||
-        !(report_programmer.valid ?
+        !(report_programmer.valid && strcmp(result->status, "planned") != 0 ?
           (append_literal(buffer, "{\"address\":") &&
            append_u32(buffer, report_programmer.device_address) &&
            append_literal(buffer, ",\"bus\":") &&

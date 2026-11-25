@@ -1426,7 +1426,7 @@
     "c/src/nmos68705.h": "e853689945e2439e9de9ef9562ce66b70ffcf0c7d1f595fe6321cc6798e5b397",
     "c/src/nvram.c": "952333aa8709f7375dc018557136693b68062745e8a01d3445b114ccb4a60c62",
     "c/src/operation_owner.c": "b962ee3f60aac912dbfa2db8c426ea2326f33bda52bafe6ec3ad2b219542eb82",
-    "c/src/operation_report.c": "42ced461c9c644633ba55534dcffc2b00e57850470b5f64ed5ba22a8ca309d00",
+    "c/src/operation_report.c": "c764366c0f4b89e7504d89464818b7a65a722d13a5a6ea5ec96564d7ec86c42b",
     "c/src/p89v51.c": "6849f2a81546e6aae4924b735d3d4f2b25b00d96d9f4a33e328a14e071080b20",
     "c/src/page_byte21_closures.inc": "ce6a234939c876417b693a362084c37316c43ee65f7c12332b4f74df5b0585b6",
     "c/src/page_eeprom.c": "2b49657cf5a52ddaa028da391bddbcb77850e3c846184c55009eaef0c3167e40",

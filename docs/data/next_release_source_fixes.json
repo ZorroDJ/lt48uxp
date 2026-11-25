@@ -1,0 +1,65 @@
+{
+  "schema": 1,
+  "date": "2026-11-24",
+  "passed": true,
+  "hardware_operations": false,
+  "release_published": false,
+  "release_checkout_commit": "c418f262c4ec8e3e7dea07adf49e6cd9930e8bf2",
+  "release_archive": {
+    "passed": true,
+    "git_tree": "46cd218598bc73204129ff2c085eb7f8201eacf7",
+    "archive_files": 1809,
+    "core_c_in_archive": true,
+    "clean_archive_configured": true,
+    "built_binaries": false,
+    "hardware": false
+  },
+  "logs": {
+    "qualification": {
+      "path": "analysis/simulation-runs/1795503789502787569-source-profile-cache-qualification/output.log",
+      "sha256": "7d45380bc950df788f1809633a34ba7e686b652a9494516b21c07c422719b3ba",
+      "boot_id": "952b7c48-38f5-46c3-9a23-0258de12eb97"
+    },
+    "archive": {
+      "path": "analysis/simulation-runs/1795503922007136004-next-release-source-archive/output.log",
+      "sha256": "736b935aa6b246bfe11a43cd0f945aff0fd399fabe9137f846820bab58569388",
+      "boot_id": "952b7c48-38f5-46c3-9a23-0258de12eb97"
+    }
+  },
+  "tests": {
+    "source_profile_getters": 600000,
+    "extra_getter_hashes": 0,
+    "catalogue_contexts": 6,
+    "gui_operation_prepare_dispatch_pairs": 116,
+    "source_publication_files": 1509,
+    "negative_publication_cases": [
+      "missing core.c",
+      "present but ignored/untracked core.c"
+    ]
+  },
+  "source_sha256": {
+    "c/src/installation.c": "07c6c6500d217c1c52234ec056ed9858fd1da43d6759a16cdc945acc183e2f22",
+    "c/apps/gtk/main.c": "d144437eb038f06068acf96a9661cb67982e88c77b4fd22b37d7a49166b9657e",
+    "c/tests/test_source_profile_cache.c": "0e54f4ed6bc4498e6346c6dde7859f387ed74e62729a075a7fbc648eda3ccb88",
+    "packaging/check-source.py": "4b7b53a61d6b7bedf245fc51b2d26d3ad347b4c11c8b4878d17790859fc6d65c",
+    "packaging/build-packages.py": "cb41df9c7a32f5c37e7a6468d56337136168ec8cd828ead054bc3d7676c04962",
+    "packaging/test-source-check.py": "91f8637e60d4cfb2c85b3c1b3344b897ae0ec3729ad612c43e187f57435f6f3a",
+    "packaging/test-release-source-archive.py": "1afcd370604b24d8ac452e33698dc4961e55854bb54d7314bb072ae3bed748b7"
+  },
+  "unchanged": {
+    "device_membership": 15768,
+    "new_device_lib": "1.0.710",
+    "executable_allowlist": true,
+    "firmware_allowlist": true
+  },
+  "build_sha256": {
+    "build-desktop/labtool48": "69c53c5e9df660cf05fb0ba79df06763b630a69fdcc12699460a3d094381e195",
+    "build-desktop/liblabtool48.so": "bd1a3127acfa5f003e75434cd4b87775c90fb764a1c7428be6486e3203fa3cdd",
+    "build-desktop/labtool48-gtk": "7581d09d95901dd040db048a092f2f1af8daa982d4c5fa21d8062b4d8b0be80f"
+  },
+  "limits": [
+    "Clean source archive configured; release binaries/packages not rebuilt or published. Research C/GTK rebuilt and tested.",
+    "No alternate14.40 executable or FX2 image accepted without bytes/audit.",
+    "Full export of earlier contact/self-test work remains part of next release preparation."
+  ]
+}

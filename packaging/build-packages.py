@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """Build project-only Ubuntu .deb and extract-and-run tarball (requires dpkg-dev)."""
-import hashlib,json,os,shutil,subprocess,tarfile,tempfile
+import hashlib,json,os,shutil,subprocess,tarfile,tempfile,sys
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
-VERSION='0.1.0-test.20261123.1'
-DEB_VERSION='0.1.0~test.20261123.1'
+VERSION='0.1.0-test.20261124.1'
+DEB_VERSION='0.1.0~test.20261124.1'
 build=Path(os.environ.get('LT48_BUILD_DIR',ROOT/'build'))
 out=Path(os.environ.get('LT48_DIST_DIR',ROOT/'dist'));out.mkdir(parents=True,exist_ok=True)
 def run(*args,**kw):return subprocess.run([str(x) for x in args],check=True,**kw)
+run(sys.executable, ROOT/'packaging/check-source.py', '--root', ROOT)
 run('cmake','-S',ROOT,'-B',build,'-DCMAKE_BUILD_TYPE=Release','-DCMAKE_INSTALL_PREFIX=/usr','-DCMAKE_INSTALL_LIBDIR=lib')
 run('cmake','--build',build,'-j2')
 run('ctest','--test-dir',build,'--output-on-failure')
@@ -41,7 +42,7 @@ with tempfile.TemporaryDirectory(prefix='lt48-pack-') as temp:
  portable=temp/'lt48uxp';shutil.copytree(usr,portable,symlinks=True)
  for name,binary in [('start-lt48uxp','labtool48-gtk'),('lt48-cli','labtool48')]:
   p=portable/name;p.write_text('#!/bin/sh\nset -eu\nHERE=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)\nexport LT48_NEW_DEVICE_LIB="$HERE/share/labtool48/NewDeviceLib"\nexport LD_LIBRARY_PATH="$HERE/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"\nexec "$HERE/bin/'+binary+'" "$@"\n');p.chmod(0o755)
- for p in ('README.md','BUILD-INFO.json'):
+ for p in ('README.md','BUILD-INFO.json','VERSION_HISTORY.md'):
   shutil.copy2(ROOT/p,portable/p)
  shutil.copytree(ROOT/'docs',portable/'docs')
  run(portable/'lt48-cli','version','--json')

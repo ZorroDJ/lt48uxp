@@ -179,6 +179,8 @@ static void usage(FILE *stream, const char *program) {
             program, program, program, program, program, program, program,
             program, program, program, program, program, program);
     fputs("       programmer initialize also accepts --fx2 OWNER.hex\n", stream);
+    fputs("       labtool48 programmer echo [--bus N --address N] [--json]\n", stream);
+    fputs("       labtool48 programmer test-empty-socket --installation OWNER_CACHE --confirm-empty [--bus N --address N] [--json]\n", stream);
     fputs("       labtool48 programmer leds --state off|busy|error|good [--bus N --address N] [--fx2 OWNER.hex] [--json]\n", stream);
     fprintf(stream,
             "       %s buffer image-inspect INPUT SIZE"
@@ -913,7 +915,9 @@ static int open_programmer(int argc, char **argv, int initialize) {
     lt48_transport_info transport_info = {0};
     const char *fx2_path = getenv("LABTOOL48_FX2_FIRMWARE");
     char default_fx2[4096];
-    int indicator = -1;
+    int indicator = -1, confirm_empty = 0;
+    const char *installation = NULL;
+    unsigned char diagnostic_idle[2778];size_t diagnostic_idle_size=0;
     if (!fx2_path || !*fx2_path) {
         const char *config = getenv("XDG_CONFIG_HOME"), *home = getenv("HOME");
         int n = config && *config ? snprintf(default_fx2, sizeof(default_fx2), "%s/labtool48uxp/fx2-firmware.hex", config) :
@@ -936,6 +940,10 @@ static int open_programmer(int argc, char **argv, int initialize) {
             }
         } else if (initialize && strcmp(argv[index], "--fx2") == 0 && index + 1 < argc) {
             fx2_path = argv[++index];
+        } else if (initialize == 4 && strcmp(argv[index], "--installation") == 0 && index+1<argc) {
+            installation=argv[++index];
+        } else if (initialize == 4 && strcmp(argv[index], "--confirm-empty") == 0) {
+            confirm_empty=1;
         } else if (initialize == 2 && strcmp(argv[index], "--state") == 0 && index + 1 < argc) {
             const char *value = argv[++index];
             indicator = !strcmp(value,"off") ? 0 : !strcmp(value,"busy") ? 1 : !strcmp(value,"error") ? 2 : !strcmp(value,"good") ? 4 : -1;
@@ -947,6 +955,16 @@ static int open_programmer(int argc, char **argv, int initialize) {
     if (initialize == 2 && indicator < 0) return 2;
     if (have_bus != have_address) {
         return 2;
+    }
+    if(initialize==4) {
+        if(!confirm_empty||!installation)return 2;
+        unsigned char *owned=NULL;size_t owned_size=0;
+        status=lt48_installation_idle_fpga(installation,&owned,&owned_size);
+        if(status==LT48_OK&&owned_size==sizeof(diagnostic_idle)) {
+            memcpy(diagnostic_idle,owned,owned_size);diagnostic_idle_size=owned_size;
+        } else if(status==LT48_OK)status=LT48_SAFETY_REJECTED;
+        free(owned);
+        if(status!=LT48_OK){fprintf(stderr,"labtool48: verified idle image unavailable: %s\n",lt48_status_string(status));return 6;}
     }
     status = lt48_context_create(&context);
     if (status != LT48_OK) {
@@ -994,6 +1012,24 @@ static int open_programmer(int argc, char **argv, int initialize) {
             fprintf(stderr, "labtool48: transport initialization failed: %s; FX2 load: %s. Use --fx2 OWNER.hex or import a verified image in the GUI. Unknown images require an audit; use load-fx2 without --execute to inspect one.\n", lt48_status_string(status), lt48_status_string(loaded));
             return 6;
         }
+    }
+    if(initialize>=3) {
+        lt48_hardware_test_result report;
+        status=lt48_programmer_hardware_test(programmer,initialize==3?LT48_HARDWARE_TEST_ECHO:LT48_HARDWARE_TEST_EMPTY_SOCKET,
+            diagnostic_idle,diagnostic_idle_size,5000,&report);
+        if(json) {
+            fputs("{\"schema\":1,\"status\":",stdout);print_json_string(lt48_status_string(status));
+            printf(",\"passed\":%s,\"echo_checks\":%u,\"pin_checks\":%u,\"patterns_completed\":%u,\"failed_pins\":%llu,\"first_failed_pin\":%u,\"expected\":%u,\"observed\":%u,\"cleanup_completed\":%s,\"cleanup_status\":",
+                status==LT48_OK?"true":"false",report.echo_checks,report.pin_checks,report.patterns_completed,
+                (unsigned long long)report.failed_pins,report.failed_pin,report.expected,report.observed,report.cleanup_completed?"true":"false");
+            print_json_string(lt48_status_string(report.cleanup_status));puts("}");
+        } else {
+            printf("%s: %s; echo %u/260; pins %u/672; patterns %u/14; cleanup %s\n",
+                initialize==3?"Communication echo":"Empty-socket digital test",lt48_status_string(status),report.echo_checks,
+                report.pin_checks,report.patterns_completed,report.cleanup_completed?"completed":"not completed/not required");
+            if(report.failed_pins){fputs("Failing ZIF pins:",stdout);for(unsigned pin=1;pin<=48;pin++)if(report.failed_pins&(UINT64_C(1)<<(pin-1)))printf(" %u",pin);putchar('\n');}
+        }
+        lt48_programmer_close(programmer);lt48_context_destroy(context);return status==LT48_OK?0:6;
     }
     if (indicator >= 0) {
         status = lt48_programmer_set_indicators(programmer, (unsigned)indicator, 2000);
@@ -7692,6 +7728,8 @@ static int main_dispatch(int argc, char **argv) {
             resumable
         );
     }
+    if(argc>=3&&!strcmp(argv[1],"programmer")&&!strcmp(argv[2],"echo"))return open_programmer(argc,argv,3);
+    if(argc>=3&&!strcmp(argv[1],"programmer")&&!strcmp(argv[2],"test-empty-socket"))return open_programmer(argc,argv,4);
     if (argc >= 3 && strcmp(argv[1], "programmer") == 0 && strcmp(argv[2], "leds") == 0)
         return open_programmer(argc, argv, 2);
     if (argc >= 3 && strcmp(argv[1], "programmer") == 0 &&

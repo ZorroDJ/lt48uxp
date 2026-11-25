@@ -478,3 +478,4 @@ unsigned lt48_small_eprom_is_hyundai18_internal(const lt48_small_eprom_resources
 unsigned lt48_small_eprom_is_hyundai13_internal(const lt48_small_eprom_resources*);
 
 void lt48_rez_digest_normalize(unsigned char digest[LT48_SHA256_SIZE]);
+lt48_status lt48_contact_dispatcher_load_internal(const char *, unsigned char [476]);

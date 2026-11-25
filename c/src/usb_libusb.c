@@ -772,6 +772,39 @@ lt48_status lt48_programmer_set_indicators(
     return status;
 }
 
+lt48_status lt48_programmer_check_contacts(lt48_programmer *p,
+    const lt48_contact_check_profile *profile,unsigned timeout,lt48_contact_check_result *out) {
+    if(!p||!profile||!out||!timeout)return LT48_INVALID_ARGUMENT;
+    memset(out,0,sizeof(*out));
+    if(!p->interface_claimed||!p->transport_ready||p->execution_active||
+       p->m37_read_armed||p->m37_operation_armed||p->auto_id_eprom_armed||!p->bulk)
+        return LT48_SAFETY_REJECTED;
+    p->execution_active=1;p->execution_timeout_ms=timeout;
+    lt48_protocol_transport api={native_write,native_read,native_cancelled,
+        lt48_programmer_progress_publish_internal,LT48_EXECUTION_READ_OPERATION};
+    lt48_status st=lt48_contact_check_execute(profile,&api,p,out);
+    p->execution_active=0;p->execution_timeout_ms=0;
+    if(st!=LT48_OK&&st!=LT48_DEVICE_MISMATCH&&st!=LT48_UNSUPPORTED)p->transport_ready=0;
+    return st;
+}
+
+lt48_status lt48_programmer_hardware_test(lt48_programmer *p,
+    lt48_hardware_test_kind kind,const unsigned char *idle,size_t size,
+    unsigned timeout,lt48_hardware_test_result *out) {
+    if(!p||!out||!timeout)return LT48_INVALID_ARGUMENT;
+    memset(out,0,sizeof(*out));
+    if(!p->interface_claimed||!p->transport_ready||p->execution_active||
+       p->m37_read_armed||p->m37_operation_armed||p->auto_id_eprom_armed||!p->bulk)
+        return LT48_SAFETY_REJECTED;
+    p->execution_active=1;p->execution_timeout_ms=timeout;
+    lt48_protocol_transport api={native_write,native_read,native_cancelled,
+        lt48_programmer_progress_publish_internal,LT48_EXECUTION_READ_OPERATION};
+    lt48_status st=lt48_hardware_test_execute(kind,idle,size,&api,p,out);
+    p->execution_active=0;p->execution_timeout_ms=0;
+    if(st!=LT48_OK)p->transport_ready=0;
+    return st;
+}
+
 lt48_status lt48_programmer_transport_initialize(
     lt48_programmer *programmer,
     unsigned timeout_ms,

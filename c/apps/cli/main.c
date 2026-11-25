@@ -3842,10 +3842,14 @@ cleanup:
         lt48_status command_status = result == 0 ? LT48_OK : status;
         char report_model[64];
         char report_serial[64];
+        uint16_t report_product = 0u;
+        uint16_t report_firmware = 0u;
         (void)lt48_programmer_describe(bus, address, report_model,
-            sizeof(report_model), report_serial, sizeof(report_serial));
+            sizeof(report_model), report_serial, sizeof(report_serial),
+            &report_product, &report_firmware);
         lt48_operation_report_set_programmer_identity(
-            report_model, report_serial, bus, address, 0u);
+            report_model, report_serial, bus, address, report_product,
+            report_firmware);
         if (execution.finalization_phase_count == 0u &&
             execution.operation_status == LT48_OK &&
             command_status != LT48_OK)

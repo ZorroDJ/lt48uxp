@@ -54,3 +54,13 @@ Root causes remain unconfirmed unless an entry states otherwise.
 See [GitHub contributor findings](GITHUB_CONTRIBUTOR_FINDINGS.md) for the earlier
 Edit workspace-switch fix and other maintenance. That fix does not establish
 resolution of UI-002.
+
+## UI-004 — Inconsistent socket contact-check gate
+
+- **Source:** GitHub issue4 and owner request, 2026-11-23.
+- **Status:** Shared C/GUI gate implemented locally; offline qualification is
+  documented in [Socket contact checking](SOCKET_CONTACT_CHECK.md). Hardware
+  testing and publication of a new release remain separate.
+- **Behavior:** Enabled by default; failed/missing checks stop normal operation
+  dispatch. Options provides an explicit session-only fixture bypass with visible
+  warnings. Existing engine safety checks remain active.

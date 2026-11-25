@@ -1,0 +1,259 @@
+{
+  "schema": 1,
+  "date": "2026-11-23",
+  "passed": true,
+  "scope": "Shared C normal/alternate contact gate for normal GTK operation dispatch; session-only fixture override",
+  "hardware_operations": false,
+  "new_admissions": 0,
+  "operation_profiles_changed": false,
+  "support_union": 15768,
+  "new_device_lib": "1.0.710",
+  "guarded_gui_initializer_sites": 50,
+  "tests": {
+    "normal_transfer_positions": 25,
+    "alternate_transfer_positions": 35,
+    "timeout_and_short_transfer_faults": 120,
+    "individual_missing_zif_pins": 48,
+    "actual_gui_mutating_dispatch_cases": 20,
+    "existing_gui_prepare_dispatch_cases": 116,
+    "alternate_pin_map_preparations": 6,
+    "actual_import_fixture_catalogue_devices": 1
+  },
+  "reused_original_evidence": [
+    {
+      "receipt": "analysis/pic-common-engine/population/contact-masks-x86.json",
+      "receipt_sha256": "06acd288d4cff8d634a5d771542f7ae010946c2db328a19b8b75f688c63147fb",
+      "summary": {
+        "entries": 534,
+        "mask_contexts": 102,
+        "acceptance_cases": 10812
+      },
+      "unchanged_reused_sources": {
+        "NewDeviceLib/sources/pic-common/source_contact_masks.h": "c8a985194b88735091afa60afadd1b2439cea745a48bf8f246d6565cc3a5c48b"
+      }
+    },
+    {
+      "receipt": "analysis/pic-common-engine/population/compact-contact-masks-x86.json",
+      "receipt_sha256": "e5692208177c53d95cb0d801c1edf79135dc406aeec70c87161a72939c833b43",
+      "summary": {
+        "entries": 1104,
+        "mask_contexts": 180,
+        "acceptance_cases": 19080,
+        "resource_contexts": 577,
+        "resource_rejections": 11
+      },
+      "unchanged_reused_sources": {
+        "NewDeviceLib/sources/pic-common/source_contact_masks.h": "c8a985194b88735091afa60afadd1b2439cea745a48bf8f246d6565cc3a5c48b"
+      }
+    },
+    {
+      "receipt": "analysis/pic-common-engine/population/contact-capture-x86.json",
+      "receipt_sha256": "d96fc091d859e5bd9656a8a8985b6a64ed59ba2be057c6323984895eac2f64dc",
+      "summary": {
+        "comparison_cases": 28,
+        "routes": 2
+      },
+      "unchanged_reused_sources": {
+        "NewDeviceLib/sources/pic-common/source_contact_capture.h": "85491bec3faadd16c25a4d4a39e772f58bb3eaf983441051ac92a93a1a0257c4"
+      }
+    }
+  ],
+  "source_sha256": {
+    "CMakeLists.txt": "f33add09ed7e8f24dbecb158e090d80c4c8854bb05b475b6c58fbc5729866242",
+    "c/src/contact_check.c": "f3e57573abba340b485f61bfb5b124761f6e3ce58f6f58c6bbf702f02893e6b5",
+    "c/src/usb_libusb.c": "65fbd175d3f7d178e1f5132985150dbcc5430fd681a279698ba9730db657d0d2",
+    "c/src/private_cache.c": "7b52c131d8f83c8c9ed9244b7aa0683e84dd87a1135a2c822038ea4e2e069d9f",
+    "c/include/labtool48/labtool48.h": "d933a1d073a8341a5c274286a3576f39036d734e3b04105513fd282f80a7ca24",
+    "c/apps/gtk/main.c": "be146c83bd802070bba764175bade1bf98c22a8c86cece6cefc8987a068c6d8b",
+    "c/tests/test_contact_check.c": "548712122b172869c1d7b91a835562057df1680d951ad0866c1629472c7e73e2",
+    "c/tests/test_contact_cache.c": "414e4fc679182a714c3867d44bf2652bd02fbd1fabbe137cbe6b5ef6ab2f45c4",
+    "c/tests/test_gtk_contact_gate.c": "7f9c619bb40368b0dbc9a3e8b5b8dcf1f124f9c3d6a4f401a3c1c947fd74f13c"
+  },
+  "build_sha256": {
+    "build-desktop/labtool48-gtk": "79fda44a2d769f17cc36402b89c7b64f27a590b0f903fcfeecf57dd8f46d854d",
+    "build-desktop/liblabtool48.so.0": "7619ba627aa56aeb7dbd8fb20831f6815263ba4a836d11b55130c340feafb514",
+    "build-desktop/labtool48": "e8b9c9ceb7b0feed3d73b36338e9a5ee2f636a04af9bf605067ab7d707fdb669"
+  },
+  "logs": {
+    "native_and_core": {
+      "path": "analysis/simulation-runs/1795459452599484807-contact-final-evidence/output.log",
+      "sha256": "2ef5d16ceb2f082b54145b52f52fb6ccd83b9782b18468e2d2ddb817250b9131",
+      "run_status": {
+        "command": [
+          "bash",
+          "-c",
+          "set -e\nbuild-desktop/labtool48-contact-check-test analysis/software-v13.10/private-cache analysis/contact-check-2026-11-23/runtime\nbuild-desktop/labtool48-core-test\npython3 analysis/gui-ui-fixes-2026-11-16/refresh-inventory.py"
+        ],
+        "profile": "simulation",
+        "properties": {
+          "MemoryHigh": "768M",
+          "MemoryMax": "1G",
+          "MemorySwapMax": "0",
+          "CPUQuota": "400%",
+          "TasksMax": "32",
+          "RuntimeMaxSec": "7200",
+          "KillMode": "control-group",
+          "TimeoutStopSec": "10",
+          "OOMPolicy": "kill"
+        },
+        "unit": "lt48-nor-audit.service",
+        "boot_id": "952b7c48-38f5-46c3-9a23-0258de12eb97",
+        "started_unix": 1795459452.599591,
+        "start_available_bytes": 8009605120,
+        "state": "exited",
+        "qualification_passed": false,
+        "minimum_host_available_bytes": 8008622080,
+        "sampled_peak_audit_memory_bytes": 7307264,
+        "launcher_pid": 136283,
+        "exit_code": 0,
+        "finished_unix": 1795459453.6418982,
+        "service": {
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "Result": "success",
+          "ExecMainStatus": "0",
+          "ControlGroup": "",
+          "MemoryCurrent": "[not set]",
+          "MemoryPeak": "[not set]"
+        }
+      }
+    },
+    "cache_and_gui_dispatch": {
+      "path": "analysis/simulation-runs/1795459068078061914-contact-cache-and-final-gui/output.log",
+      "sha256": "c09ba0582cc536245f105474a419b53904346566b0a0c8427e2968169c2104d8",
+      "run_status": {
+        "command": [
+          "bash",
+          "-c",
+          "set -e\ncmake -S . -B build-desktop -DBUILD_TESTING=ON\ncmake --build build-desktop --target labtool48-contact-cache-test labtool48-gtk-contact-gate-test labtool48-gtk-operations-audit-test labtool48-gtk labtool48 -j2\nstdbuf -oL build-desktop/labtool48-contact-cache-test analysis/software-v13.10/private-cache analysis/contact-check-2026-11-23/cache-with-helper\nG_DEBUG=fatal-criticals build-desktop/labtool48-gtk-contact-gate-test analysis/contact-check-2026-11-23/cache-with-helper\nG_DEBUG=fatal-criticals build-desktop/labtool48-gtk-operations-audit-test analysis/contact-check-2026-11-23/cache-with-helper\nbuild-desktop/labtool48-core-test"
+        ],
+        "profile": "simulation",
+        "properties": {
+          "MemoryHigh": "768M",
+          "MemoryMax": "1G",
+          "MemorySwapMax": "0",
+          "CPUQuota": "400%",
+          "TasksMax": "32",
+          "RuntimeMaxSec": "7200",
+          "KillMode": "control-group",
+          "TimeoutStopSec": "10",
+          "OOMPolicy": "kill"
+        },
+        "unit": "lt48-nor-audit.service",
+        "boot_id": "952b7c48-38f5-46c3-9a23-0258de12eb97",
+        "started_unix": 1795459068.0781932,
+        "start_available_bytes": 8028962816,
+        "state": "exited",
+        "qualification_passed": false,
+        "minimum_host_available_bytes": 7636774912,
+        "sampled_peak_audit_memory_bytes": 384385024,
+        "launcher_pid": 134342,
+        "exit_code": 0,
+        "finished_unix": 1795459239.7216535,
+        "service": {
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "Result": "success",
+          "ExecMainStatus": "0",
+          "ControlGroup": "",
+          "MemoryCurrent": "[not set]",
+          "MemoryPeak": "[not set]"
+        }
+      }
+    },
+    "actual_import_verify_reimport": {
+      "path": "analysis/simulation-runs/1795459276973705952-contact-importer-integration/output.log",
+      "sha256": "7543680aedb9c22edb4ad6c782824b06923e0c54ba69f0cf5eff3873c4af7c5c",
+      "run_status": {
+        "command": [
+          "bash",
+          "-c",
+          "set -e\nbuild-desktop/labtool48 cache import analysis/contact-check-2026-11-23/one-device-source analysis/contact-check-2026-11-23/imported-small --runtime-source analysis/contact-check-2026-11-23/runtime --json\nbuild-desktop/labtool48 cache verify analysis/contact-check-2026-11-23/imported-small --json\nbuild-desktop/labtool48 cache import analysis/contact-check-2026-11-23/imported-small analysis/contact-check-2026-11-23/reimported-small --json\nsha256sum analysis/contact-check-2026-11-23/imported-small/contact-dispatcher.bin analysis/contact-check-2026-11-23/reimported-small/contact-dispatcher.bin"
+        ],
+        "profile": "simulation",
+        "properties": {
+          "MemoryHigh": "768M",
+          "MemoryMax": "1G",
+          "MemorySwapMax": "0",
+          "CPUQuota": "400%",
+          "TasksMax": "32",
+          "RuntimeMaxSec": "7200",
+          "KillMode": "control-group",
+          "TimeoutStopSec": "10",
+          "OOMPolicy": "kill"
+        },
+        "unit": "lt48-nor-audit.service",
+        "boot_id": "952b7c48-38f5-46c3-9a23-0258de12eb97",
+        "started_unix": 1795459276.9738486,
+        "start_available_bytes": 7969361920,
+        "state": "exited",
+        "qualification_passed": false,
+        "minimum_host_available_bytes": 7962279936,
+        "sampled_peak_audit_memory_bytes": 9363456,
+        "launcher_pid": 135630,
+        "exit_code": 0,
+        "finished_unix": 1795459279.065403,
+        "service": {
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "Result": "success",
+          "ExecMainStatus": "0",
+          "ControlGroup": "",
+          "MemoryCurrent": "[not set]",
+          "MemoryPeak": "[not set]"
+        }
+      }
+    },
+    "ui_and_previous_github_regressions": {
+      "path": "analysis/simulation-runs/1795459335740495522-contact-ui-final-regression/output.log",
+      "sha256": "6c5c5d504b2d7884ffb1e30a102018c4fae34b9c086b7c33d9c5e590918cbb2d",
+      "run_status": {
+        "command": [
+          "bash",
+          "-c",
+          "set -e\ncmake --build build-desktop --target labtool48-gtk-ui-audit-test labtool48-gtk-github-fixes-test -j2\nG_DEBUG=fatal-criticals build-desktop/labtool48-gtk-ui-audit-test analysis/contact-check-2026-11-23/cache-with-helper\nG_DEBUG=fatal-criticals build-desktop/labtool48-gtk-github-fixes-test"
+        ],
+        "profile": "simulation",
+        "properties": {
+          "MemoryHigh": "768M",
+          "MemoryMax": "1G",
+          "MemorySwapMax": "0",
+          "CPUQuota": "400%",
+          "TasksMax": "32",
+          "RuntimeMaxSec": "7200",
+          "KillMode": "control-group",
+          "TimeoutStopSec": "10",
+          "OOMPolicy": "kill"
+        },
+        "unit": "lt48-nor-audit.service",
+        "boot_id": "952b7c48-38f5-46c3-9a23-0258de12eb97",
+        "started_unix": 1795459335.7406173,
+        "start_available_bytes": 7900741632,
+        "state": "exited",
+        "qualification_passed": false,
+        "minimum_host_available_bytes": 7538642944,
+        "sampled_peak_audit_memory_bytes": 346255360,
+        "launcher_pid": 135888,
+        "exit_code": 0,
+        "finished_unix": 1795459362.0292838,
+        "service": {
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "Result": "success",
+          "ExecMainStatus": "0",
+          "ControlGroup": "",
+          "MemoryCurrent": "[not set]",
+          "MemoryPeak": "[not set]"
+        }
+      }
+    }
+  },
+  "limitations": [
+    "No physical socket/pin waveform or contact-accuracy qualification performed.",
+    "Older alternate-route caches need the verified helper from owner runtime.",
+    "Fixture bypass skips the shared normal-GUI gate; existing engine checks remain active.",
+    "Lower-level native engine callers retain their documented contact-policy responsibility.",
+    "Historical source-host versions were not individually re-audited.",
+    "Existing GitHub release and issue4 remain unchanged."
+  ]
+}

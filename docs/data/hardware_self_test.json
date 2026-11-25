@@ -1,0 +1,133 @@
+{
+  "schema": 1,
+  "date": "2026-11-23",
+  "passed": true,
+  "hardware_tested": true,
+  "support_union": 15768,
+  "new_admissions": 0,
+  "new_device_library": "1.0.710",
+  "scope": "Standalone echo and empty-socket digital owner, CLI and GTK; not full Windows Self Test",
+  "tests": {
+    "echo_values": 260,
+    "echo_mismatch_positions": 260,
+    "digital_patterns": 14,
+    "pin_comparisons": 672,
+    "individual_stuck_cases": 96,
+    "shorted_pin_pairs": 48,
+    "endpoint_positions": 3838,
+    "endpoint_timeout_and_short_faults": 7676,
+    "gui_worker_cases": 11,
+    "prior_gui_contact_cases": 20,
+    "original_resident_cases": 768,
+    "fpga_external_pad_checks": 1392
+  },
+  "hardware": {
+    "schema": 1,
+    "status": "success",
+    "passed": true,
+    "echo_checks": 0,
+    "pin_checks": 672,
+    "patterns_completed": 14,
+    "failed_pins": 0,
+    "first_failed_pin": 0,
+    "expected": 0,
+    "observed": 0,
+    "cleanup_completed": true,
+    "cleanup_status": "success"
+  },
+  "logs": {
+    "original_and_fpga": {
+      "path": "analysis/simulation-runs/1795461922028376994-hardware-diagnostics-original-and-fpga/output.log",
+      "sha256": "4d741b792d2236202c39e82998a853e2c31b4b9c7208535984099c0e7393d625",
+      "runner_state": "exited",
+      "boot_id": "952b7c48-38f5-46c3-9a23-0258de12eb97"
+    },
+    "native_cli_core": {
+      "path": "analysis/simulation-runs/1795462199690682089-hardware-diagnostics-final-tests/output.log",
+      "sha256": "0d49ee629cf4b9a2c0cb905b11c137b3ea55634c71dde08ebd562fc9bd582fe6",
+      "runner_state": "exited",
+      "boot_id": "952b7c48-38f5-46c3-9a23-0258de12eb97"
+    },
+    "gui_regressions": {
+      "path": "analysis/simulation-runs/1795462039053008372-hardware-diagnostics-gui-regression-final/output.log",
+      "sha256": "93d4dd9e6e5ba421a9591dc4b6a198404355400297a42a1bf46bf4076fa9043e",
+      "runner_state": "exited",
+      "boot_id": "952b7c48-38f5-46c3-9a23-0258de12eb97"
+    },
+    "live_echo": {
+      "report": {
+        "schema": 1,
+        "status": "success",
+        "passed": true,
+        "echo_checks": 260,
+        "pin_checks": 0,
+        "patterns_completed": 0,
+        "failed_pins": 0,
+        "first_failed_pin": 0,
+        "expected": 0,
+        "observed": 0,
+        "cleanup_completed": false,
+        "cleanup_status": "success"
+      },
+      "path": "analysis/simulation-runs/1795462140893224771-hardware-diagnostics-live-echo-ready/output.log",
+      "sha256": "2b3e0c60fd637814ffef326c46f17986d4cee34e8ec74b937228c4f1a7187f1f",
+      "runner_state": "exited",
+      "boot_id": "952b7c48-38f5-46c3-9a23-0258de12eb97"
+    },
+    "live_empty_socket": {
+      "report": {
+        "schema": 1,
+        "status": "success",
+        "passed": true,
+        "echo_checks": 0,
+        "pin_checks": 672,
+        "patterns_completed": 14,
+        "failed_pins": 0,
+        "first_failed_pin": 0,
+        "expected": 0,
+        "observed": 0,
+        "cleanup_completed": true,
+        "cleanup_status": "success"
+      },
+      "path": "analysis/simulation-runs/1795462155578897486-hardware-diagnostics-live-empty/output.log",
+      "sha256": "ffa50d39126491c27b695d9c7253cc8524a5beb91ba94c5cf4ac4e521b52c558",
+      "runner_state": "exited",
+      "boot_id": "952b7c48-38f5-46c3-9a23-0258de12eb97"
+    },
+    "volatile_bridge_load": {
+      "path": "analysis/simulation-runs/1795462128768397772-hardware-diagnostics-live-bridge/output.log",
+      "sha256": "a53436975377b6b93227fcfbe964b079169c2c0d69b248b05b9a86b646c599e2",
+      "runner_state": "exited",
+      "boot_id": "952b7c48-38f5-46c3-9a23-0258de12eb97"
+    }
+  },
+  "source_sha256": {
+    "c/src/hardware_test.c": "950a2c750e42710aef153071afe3b02cb042b516ffd3f515c8bd2822f724a1f4",
+    "c/src/usb_libusb.c": "e58ef228bbf4a8d56b3ac55d6e7700721d2897f5d6b4dbb0331c500630458329",
+    "c/include/labtool48/labtool48.h": "038b16bd6a23d392d698f2a3c8fb2fbac2de1a7524e6a618bee9265833e61cf2",
+    "c/apps/gtk/main.c": "c943f24900c5ad48075a1a6dcf4036208db06e8935b9634a88c95c514a02979e",
+    "c/apps/cli/main.c": "49ef03339a7b48c5ce13e60bbd539e1bb899078a741501a70d19716c6752d68f",
+    "c/tests/test_hardware_test.c": "761625ae7dcfdfa46e4073978698373a55d1d46a4ea2f30017144379a1591b54",
+    "c/tests/test_gtk_hardware_test.c": "8bcbb5d9f72153763e6af699c949d81b48f1ff6bcb27b899a6e0c5f2417cc609",
+    "c/tests/test_cli_github_fixes.c": "24f8072310b8a9aaa844f251d61e37ea23e38ea09782933b828afb35c4136cc9",
+    "tools/audit_hardware_diagnostics.py": "82724acf3d80108b5c8b88b929b852b0e0790783166a445e6696726cbaf76794"
+  },
+  "build_sha256": {
+    "build-desktop/labtool48": "69c53c5e9df660cf05fb0ba79df06763b630a69fdcc12699460a3d094381e195",
+    "build-desktop/liblabtool48.so": "eee524c267b7c518794bc262faae79e697ed36e08b7260906e1dd74682dbf4cf",
+    "build-desktop/labtool48-gtk": "92a150f83b600b8462833fc9817297b43d5db5749957811b647fafb2dff203d1"
+  },
+  "reused_echo_evidence": "docs/DATAMAN_1310_HOST_ANALYSIS.md#2026-09-26-original-communication-check-executed",
+  "original_and_fpga_audit": {
+    "path": "analysis/hardware-diagnostics-2026-11-23/audit.json",
+    "sha256": "d6c40c42f4343276f6176441c7524cfec668f0352fca431ce85d276c4d6bb313"
+  },
+  "limitations": [
+    "FPGA pad readback does not certify continuity through the passive series network to the ZIF contact.",
+    "No analogue voltage/current/leakage, relay-load or external-fixture certification.",
+    "Four original echo values reused; remaining256values and14socket patterns are authored diagnostics using audited resident commands.",
+    "First live initialization failed with absent default bridge image; explicit known volatile bridge load and re-enumeration completed before successful tests.",
+    "An early GUI test invocation lacked xvfb-run and failed before running; final direct-display GUI regression passed.",
+    "No vendor payloads bundled; no security or EEPROM writes; no release or issue publication."
+  ]
+}

@@ -22,22 +22,20 @@ And now, keep on with the original README...
 
 # LT48UXP — independent Linux programmer software
 
-Build **0.1.0-test.20261123.1**, Ubuntu **26.04 amd64**. Limited-test prerelease.
+Build **0.1.0-test.20261124.1**, Ubuntu **26.04 amd64**. Limited-test prerelease.
 This repository now includes the project's native C library, CLI, GTK 4 GUI,
 authored NewDeviceLib and a standalone CMake build. The existing `fpga-idle/`
 project-generated Verilog study is retained.
 
 **No original vendor software, databases, firmware or imported private caches
-are supplied.** Obtain your own matching resources separately. Source archives
-now contain buildable application source, unlike the October documentation-only
-release. Packages are available under [Releases](https://github.com/ashurbanipal-labs/lt48uxp/releases).
+are supplied.** Obtain your own matching resources separately. The source publication omission from the previous release is corrected; `core.c` is now tracked and packaging checks source completeness. Packages are available under [Releases](https://github.com/ashurbanipal-labs/lt48uxp/releases).
 
 ## Install the Ubuntu package
 
-Download `lt48uxp_0.1.0-test.20261123.1_amd64.deb`, then:
+Download `lt48uxp_0.1.0-test.20261124.1_amd64.deb`, then:
 
 ```bash
-sudo apt install ./lt48uxp_0.1.0-test.20261123.1_amd64.deb
+sudo apt install ./lt48uxp_0.1.0-test.20261124.1_amd64.deb
 ```
 
 Launch **LabTool-48UXP** from the application menu, or run `labtool48-gtk`.
@@ -55,7 +53,7 @@ Dependencies are declared by the `.deb` and resolved by apt.
 
 ## Extract-and-run alternative
 
-Extract `lt48uxp-0.1.0-test.20261123.1-ubuntu26.04-amd64.tar.gz`, enter its
+Extract `lt48uxp-0.1.0-test.20261124.1-ubuntu26.04-amd64.tar.gz`, enter its
 `lt48uxp` directory, install runtime dependencies and run:
 
 ```bash
@@ -171,3 +169,22 @@ preservation principle is familiar to anyone reading an old ROM.
 This project carries that idea into electronics: recover the knowledge,
 document how it works, and keep older equipment readable and useful. The
 repository name `lt48uxp` identifies the programmer it supports.
+
+## Contact checks and hardware diagnostics
+
+Socket contact checking is enabled by default before normal GUI device
+operations. A failed check blocks dispatch. **Options → Socket contact check…**
+provides an explicit session-only fixture override. Existing alternate contact
+routes may require reimporting your complete original runtime into a new cache
+so the exact verified dispatcher can be extracted. No vendor payload is bundled.
+See [contact checking](docs/SOCKET_CONTACT_CHECK.md).
+
+**Diagnostics → Self Test** provides communication echo, empty-socket digital
+and LED tests. Remove every chip/adapter/fixture and confirm the empty socket
+before the digital test. Live qualification passed 260 echo comparisons and
+672 digital pin comparisons; cleanup completed. Digital readback does not
+certify external contact continuity or analogue voltage/current behavior.
+RAM, fixture, DAC measurement and fault-protection testing remain deferred.
+See [self-test instructions and limits](docs/HARDWARE_SELF_TEST.md).
+
+See [version history](VERSION_HISTORY.md) for release changes and known limits.

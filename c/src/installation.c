@@ -336,12 +336,10 @@ struct lt48_installation {
     struct { const lt48_new_device_record *record; size_t donor; } *new_devices;
     size_t new_count;
     const lt48_new_device_record **corrections;
-    const char *source_profile;
+    const char *source_profile; /* Immutable catalogue identity, computed once. */
 };
 
-static const char *installation_compute_source_profile(
-    const lt48_installation *installation
-);
+static const char *installation_compute_source_profile(const lt48_installation *installation);
 
 static const char *installation_definition_stem(
     const lt48_installation *installation, uint16_t device_class
@@ -531,11 +529,10 @@ lt48_status lt48_installation_open(
             ++next;
         }
     }
+    installation->source_profile=installation_compute_source_profile(installation);
     status=installation_load_new_library(installation);
     if(status!=LT48_OK){lt48_installation_close(installation);return status;}
     *out_installation = installation;
-    installation->source_profile =
-        installation_compute_source_profile(installation);
     return LT48_OK;
 }
 
@@ -543,9 +540,7 @@ size_t lt48_installation_device_count(const lt48_installation *installation) {
     return installation ? installation->device_count+installation->new_count : 0;
 }
 
-static const char *installation_compute_source_profile(
-    const lt48_installation *installation
-) {
+static const char *installation_compute_source_profile(const lt48_installation *installation) {
     unsigned char digest[LT48_SHA256_SIZE];
     char hex[LT48_SHA256_SIZE * 2u + 1u];
     if (!installation || lt48_rez_sha256(installation->catalogue, digest) != LT48_OK)
@@ -564,9 +559,7 @@ static const char *installation_compute_source_profile(
 }
 
 const char *lt48_installation_source_profile(const lt48_installation *installation) {
-    if (installation == NULL || installation->source_profile == NULL)
-        return "unrecognized";
-    return installation->source_profile;
+    return installation && installation->source_profile ? installation->source_profile : "unrecognized";
 }
 
 const char *lt48_installation_path(const lt48_installation *installation) {

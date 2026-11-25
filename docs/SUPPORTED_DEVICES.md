@@ -16595,4 +16595,4 @@ python3 tools/run_limited_simulation.py --label support-export -- python3 tools/
 
 Maintain direct test evidence and its scope in `docs/data/device_evidence.json`; never infer a physical test from an engine-level support label. New audit levels require an explicit description in the generator. Both configured source installations must be present; a missing database stops generation rather than silently removing its devices.
 
-The companion [machine-readable list](data/supported_devices.json) records source catalogue and native binary/library hashes, per-version operations and evidence. This generator uses offline CLI queries only and performs no programmer operations.
+The companion [machine-readable list](supported-devices.json) records source catalogue and native binary/library hashes, per-version operations and evidence. This generator uses offline CLI queries only and performs no programmer operations.

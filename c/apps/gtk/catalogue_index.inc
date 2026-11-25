@@ -47,7 +47,7 @@ static gboolean catalogue_hash_directory(GChecksum *sum,const char *path,
 static char *catalogue_fingerprint(const char *path,GCancellable *cancel) {
     if(!path||!*path)return NULL;
     GChecksum *sum=g_checksum_new(G_CHECKSUM_SHA256);
-    const char *schema="lt48-gtk-index-v1:" __DATE__ ":" __TIME__;
+    const char *schema="lt48-gtk-index-v2";
     g_checksum_update(sum,(const guchar *)schema,strlen(schema)+1);
     char *canonical=g_canonicalize_filename(path,NULL);
     g_checksum_update(sum,(const guchar *)canonical,strlen(canonical)+1);

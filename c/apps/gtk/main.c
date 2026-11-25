@@ -759,6 +759,9 @@ typedef struct operation_execute_task {
     uint8_t bus;
     uint8_t address;
     uint32_t timeout;
+    unsigned product_id;
+    char programmer_model[64];
+    char programmer_serial[64];
 } operation_execute_task;
 
 typedef struct operation_execute_result {
@@ -10136,6 +10139,9 @@ static void operation_execute_worker(
     operation_execute_task *work = task_data;
     operation_prepare_task *request = work->request;
     operation_execute_result *result = g_new0(operation_execute_result, 1);
+    lt48_operation_report_set_programmer_identity(
+        work->programmer_model, work->programmer_serial,
+        work->bus, work->address, work->product_id);
     lt48_installation *installation = NULL;
     const char *operation_profile = "unclassified";
     lt48_gal_resources *gal_resources = NULL;
@@ -12528,6 +12534,10 @@ static void execute_prepared_operation(app_widgets *widgets) {
     work->bus = bus;
     work->address = address;
     work->timeout = timeout;
+    work->product_id = widgets->selected_programmer_product_id;
+    (void)lt48_programmer_describe(bus, address, work->programmer_model,
+        sizeof(work->programmer_model), work->programmer_serial,
+        sizeof(work->programmer_serial));
     if (work->request == NULL) {
         operation_execute_task_free(work);
         gtk_label_set_text(GTK_LABEL(widgets->read_preparation),

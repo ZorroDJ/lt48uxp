@@ -3840,6 +3840,12 @@ cleanup:
     if (execution_authorized) {
         lt48_status report_status;
         lt48_status command_status = result == 0 ? LT48_OK : status;
+        char report_model[64];
+        char report_serial[64];
+        (void)lt48_programmer_describe(bus, address, report_model,
+            sizeof(report_model), report_serial, sizeof(report_serial));
+        lt48_operation_report_set_programmer_identity(
+            report_model, report_serial, bus, address, 0u);
         if (execution.finalization_phase_count == 0u &&
             execution.operation_status == LT48_OK &&
             command_status != LT48_OK)

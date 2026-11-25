@@ -1,5 +1,7 @@
 #include <labtool48/labtool48.h>
 
+#include <stdio.h>
+
 #include "internal.h"
 
 #include <stdlib.h>
@@ -122,6 +124,19 @@ void lt48_context_destroy(lt48_context *context) {
     free(context);
 }
 
+static void programmer_descriptor_string(
+    libusb_device *device, uint8_t index, char *out, size_t capacity
+) {
+    libusb_device_handle *handle = NULL;
+    out[0] = '\0';
+    if (index == 0u || capacity < 2u) return;
+    if (libusb_open(device, &handle) != LIBUSB_SUCCESS) return;
+    (void)libusb_get_string_descriptor_ascii(handle, index,
+        (unsigned char *)out, (int)capacity);
+    libusb_close(handle);
+    out[capacity - 1u] = '\0';
+}
+
 lt48_status lt48_programmer_list(
     lt48_context *context,
     lt48_programmer_info *infos,
@@ -152,12 +167,54 @@ lt48_status lt48_programmer_list(
             infos[found].usb_version_bcd = descriptor.bcdUSB;
             infos[found].bus_number = libusb_get_bus_number(devices[index]);
             infos[found].device_address = libusb_get_device_address(devices[index]);
+            programmer_descriptor_string(devices[index],
+                descriptor.iProduct, infos[found].model,
+                sizeof(infos[found].model));
+            programmer_descriptor_string(devices[index],
+                descriptor.iSerialNumber, infos[found].serial_number,
+                sizeof(infos[found].serial_number));
+            if (infos[found].model[0] == '\0')
+                snprintf(infos[found].model, sizeof(infos[found].model),
+                    "%s", lt48_programmer_descriptor_role(descriptor.idProduct));
         }
         ++found;
     }
     libusb_free_device_list(devices, 1);
     *out_count = found;
     return found > capacity ? LT48_BUFFER_TOO_SMALL : LT48_OK;
+}
+
+lt48_status lt48_programmer_describe(
+    uint8_t bus_number, uint8_t device_address,
+    char *model, size_t model_size, char *serial, size_t serial_size
+) {
+    lt48_context *context = NULL;
+    lt48_programmer_info infos[64];
+    size_t count = 0u;
+    lt48_status status;
+    if (model == NULL || model_size == 0u ||
+        serial == NULL || serial_size == 0u)
+        return LT48_INVALID_ARGUMENT;
+    model[0] = '\0';
+    serial[0] = '\0';
+    status = lt48_context_create(&context);
+    if (status != LT48_OK) return status;
+    status = lt48_programmer_list(
+        context, infos, sizeof(infos) / sizeof(infos[0]), &count);
+    if (status == LT48_BUFFER_TOO_SMALL) status = LT48_OK;
+    if (status == LT48_OK) {
+        status = LT48_NOT_FOUND;
+        for (size_t index = 0u; index < count; ++index) {
+            if (infos[index].bus_number != bus_number ||
+                infos[index].device_address != device_address) continue;
+            snprintf(model, model_size, "%s", infos[index].model);
+            snprintf(serial, serial_size, "%s", infos[index].serial_number);
+            status = LT48_OK;
+            break;
+        }
+    }
+    lt48_context_destroy(context);
+    return status;
 }
 
 lt48_status lt48_programmer_open(

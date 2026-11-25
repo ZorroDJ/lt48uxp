@@ -869,6 +869,8 @@ typedef struct lt48_programmer_info {
     uint16_t usb_version_bcd;
     uint8_t bus_number;
     uint8_t device_address;
+    char model[64];
+    char serial_number[64];
 } lt48_programmer_info;
 
 typedef struct lt48_transport_info {
@@ -2117,6 +2119,10 @@ LT48_API const char *lt48_programmer_descriptor_role(uint16_t product_id);
  * one item is required.  An empty/missing target returns LT48_NOT_FOUND and
  * an ambiguous unqualified selection returns LT48_BUSY.
  */
+LT48_API lt48_status lt48_programmer_describe(
+    uint8_t bus_number, uint8_t device_address,
+    char *model, size_t model_size, char *serial, size_t serial_size
+);
 LT48_API lt48_status lt48_programmer_info_select(
     const lt48_programmer_info *infos, size_t count, int has_exact_target,
     uint8_t bus_number, uint8_t device_address,
@@ -4265,6 +4271,10 @@ LT48_API lt48_status lt48_jtag_validate_target_profile(
 );
 
 /* Strict supported-schema, payload-free operation-report inspection. */
+LT48_API void lt48_operation_report_set_programmer_identity(
+    const char *model, const char *serial, unsigned bus_number,
+    unsigned device_address, unsigned product_id
+);
 LT48_API lt48_status lt48_operation_report_open(
     const char *path, lt48_operation_report **out_report
 );

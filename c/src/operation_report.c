@@ -15,6 +15,35 @@
 #include <string.h>
 #include <time.h>
 
+typedef struct report_programmer_identity {
+    char model[64];
+    char serial[64];
+    unsigned bus_number;
+    unsigned device_address;
+    unsigned product_id;
+    int valid;
+} report_programmer_identity;
+
+static _Thread_local report_programmer_identity report_programmer;
+
+void lt48_operation_report_set_programmer_identity(
+    const char *model, const char *serial, unsigned bus_number,
+    unsigned device_address, unsigned product_id
+) {
+    if (model == NULL || serial == NULL) {
+        report_programmer.valid = 0;
+        return;
+    }
+    snprintf(report_programmer.model, sizeof(report_programmer.model),
+             "%s", model);
+    snprintf(report_programmer.serial, sizeof(report_programmer.serial),
+             "%s", serial);
+    report_programmer.bus_number = bus_number;
+    report_programmer.device_address = device_address;
+    report_programmer.product_id = product_id;
+    report_programmer.valid = 1;
+}
+
 typedef enum json_type {
     JSON_NULL,
     JSON_BOOL,
@@ -629,6 +658,15 @@ static int validate_report_schema(const json_value *root) {
         "failure", "report_sha256", "address_range", "mismatch_override",
         "cancelled", "observed_result"
     };
+    static const char *const root_fields_v3[] = {
+        "schema_version", "run_id", "device", "operation", "status",
+        "support_level", "plan_sha256", "input_image_sha256", "output",
+        "resource_objects", "planned_voltages_centivolts", "started_at_utc",
+        "finished_at_utc", "duration_ms", "phases", "session_events",
+        "cleanup", "verification_result", "progress_observer_error_count",
+        "failure", "report_sha256", "address_range", "mismatch_override",
+        "cancelled", "observed_result", "programmer"
+    };
     static const char *const range_fields[] = {"length", "start"};
     static const char *const device_fields[] = {
         "key", "definition", "device_class", "source_sha256",
@@ -660,6 +698,7 @@ static int validate_report_schema(const json_value *root) {
     if (!is_number(schema)) return 0;
     if (string_equal(&schema->value.text, "1")) schema_version = 1u;
     else if (string_equal(&schema->value.text, "2")) schema_version = 2u;
+    else if (string_equal(&schema->value.text, "3")) schema_version = 3u;
     else return 0;
     if (schema_version == 1u) {
         if (!exact_fields(root, root_fields_v1,
@@ -667,9 +706,11 @@ static int validate_report_schema(const json_value *root) {
                           sizeof(root_fields_v1[0]))) return 0;
     } else {
         json_value *range;
-        if (!exact_fields(root, root_fields_v2,
+        if (!exact_fields(root,
+                          schema_version == 3u ? root_fields_v3 : root_fields_v2,
                           sizeof(root_fields_v2) /
-                          sizeof(root_fields_v2[0]))) return 0;
+                          sizeof(root_fields_v2[0]) +
+                              (schema_version == 3u ? 1u : 0u))) return 0;
         range = object_find(root, "address_range");
         if (!exact_fields(range, range_fields, 2u) ||
             !is_number(object_find(range, "start")) ||
@@ -677,6 +718,20 @@ static int validate_report_schema(const json_value *root) {
             !is_bool(object_find(root, "mismatch_override")) ||
             !is_bool(object_find(root, "cancelled")) ||
             !is_string_or_null(object_find(root, "observed_result"))) return 0;
+        if (schema_version == 3u) {
+            json_value *programmer = object_find(root, "programmer");
+            static const char *const programmer_fields[] = {
+                "bus", "address", "product_id", "model", "serial"
+            };
+            if (programmer->type != JSON_NULL &&
+                (!exact_fields(programmer, programmer_fields, 5u) ||
+                 !is_number(object_find(programmer, "bus")) ||
+                 !is_number(object_find(programmer, "address")) ||
+                 !is_number(object_find(programmer, "product_id")) ||
+                 object_find(programmer, "model")->type != JSON_STRING ||
+                 object_find(programmer, "serial")->type != JSON_STRING))
+                return 0;
+        }
     }
     if (object_find(root, "run_id")->type != JSON_STRING ||
         object_find(root, "operation")->type != JSON_STRING ||
@@ -1384,15 +1439,28 @@ static int build_report_body(
             !append_u32(buffer, plan->planned_voltages_centivolts[index]))
             return 0;
     }
-    if (!append_literal(buffer,
-            "],\"progress_observer_error_count\":") ||
+    if (!append_literal(buffer, "],\"programmer\":") ||
+        !(report_programmer.valid ?
+          (append_literal(buffer, "{\"address\":") &&
+           append_u32(buffer, report_programmer.device_address) &&
+           append_literal(buffer, ",\"bus\":") &&
+           append_u32(buffer, report_programmer.bus_number) &&
+           append_literal(buffer, ",\"model\":") &&
+           append_c_string(buffer, report_programmer.model) &&
+           append_literal(buffer, ",\"product_id\":") &&
+           append_u32(buffer, report_programmer.product_id) &&
+           append_literal(buffer, ",\"serial\":") &&
+           append_c_string(buffer, report_programmer.serial) &&
+           buffer_byte(buffer, '}')) :
+          append_literal(buffer, "null")) ||
+        !append_literal(buffer, ",\"progress_observer_error_count\":") ||
         !append_size(buffer, result->progress_observer_error_count) ||
         !append_literal(buffer, ",\"resource_objects\":") ||
         !append_report_resources(buffer, plan) ||
         !append_literal(buffer, ",\"run_id\":") ||
         !append_c_string(buffer, run_id) ||
         !append_literal(buffer,
-            ",\"schema_version\":2,\"session_events\":[],"
+            ",\"schema_version\":3,\"session_events\":[],"
             "\"started_at_utc\":") ||
         !append_c_string(buffer, started_at) ||
         !append_literal(buffer, ",\"status\":") ||

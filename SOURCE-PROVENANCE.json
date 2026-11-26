@@ -1516,6 +1516,7 @@
     "c/src/xp_shared_word_shapes.inc": "f159c5ce806834792b7ef2e800cc5a4c0ffc906404082bf5096b16e804cb1381",
     "packaging/70-labtool48.rules": "a64a9efe8041afacec8662e97d27f6f51fb0b733c0e75586ce58cbce0ff60902",
     "custom/Free48.svg": "e43999ab6ed4a58fcd21900fa2ff7506d94240a96ae684da6cdaeb1a4c3f688e",
+    "custom/Free48.png": "74f39dad33592ef1e1a52ca0f381e4ef55e2febd9563f0f0f5cc8f59c411728f",
     "packaging/labtool48.desktop": "3f2668e28337e052619030872db2d332d09fe874c43074a507bf23586b147550",
     "packaging/test_release.c": "bcf4b2d962a78ec3d215352082078d9dadf126ae6d9cadf4d50d74a047e8ebfe",
     "c/src/reader_identity.c": "dda5d726ba112d66b63cc920b45a4ab4fd22dcfa30399785188c18fd6dc66236",

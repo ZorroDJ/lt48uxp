@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="custom/Free48.png" alt="Free48 — LabTool-48UXP programmer" width="240">
+</p>
+
 # LT48UXP with some fixes
 
 This is a small fork with some fixes/enhancements of [lt48uxp](https://github.com/ashurbanipal-labs/lt48uxp) by vtp, a 100% Linux ground-up software for the well-known LabTool48. Here are the changes:
@@ -17,6 +21,26 @@ Rewords the message in "READY and plan prepared; no USB opened yet".
 - 479c573 - Remember and restore the last selected device (1 file, +88/−7)
 
 Saves database/vendor/chip name to dialogs.ini and re-selects it on restart only if unambiguous.
+
+- 1e565bf - Support AEC 14.40 resources with audited 13.10 engines
+
+Maps recognized AEC 14.40 resource digests to their audited 13.10 counterparts. This enables complete operations for additional devices in a private 14.40 database without mixing resource files.
+
+- 03b465b, f7dd6b9 - Make catalogue indexing reusable and responsive
+
+Reuses the index across equivalent builds, avoids hashing the same REZ file for every device, and shows indexing progress. Stale database paths are removed from the selector. A cold index still takes time; subsequent searches use the cached result.
+
+- 2b2cc8f - Add a GNOME/Wayland application icon
+
+Installs and references the Free48 SVG icon instead of the default application icon.
+
+- c2b42aa, ad0ea3d, b1cb1c0, d3e2102, e1b338f - Improve reader identity and operation reports
+
+Reads the reader's model and firmware version from its live monitor instead of inferring firmware from USB descriptors. Records live identity in operation reports while keeping offline planned reports free of stale reader data. Earlier report versions remain readable.
+
+- 6e0d246 - Use a source-built ZAPPLET by default
+
+Bundles the project's 8051 ASM, verified 414-byte binary and LTID/LTRS protocol specification. The default build displays only the live reader model and firmware version; it does not request a serial number. The original U62 serial-reading path remains available with `-DORIGINAL_IDENTITY_APPLET=ON` and an independently supplied, verified original applet. No original vendor applet is bundled.
 
 And now, keep on with the original README...
 

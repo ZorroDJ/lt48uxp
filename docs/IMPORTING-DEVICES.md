@@ -21,13 +21,15 @@ for example `~/LabTool-resources/Dataman-13.10/`. That directory must contain:
   14.30 and audited 14.40 variants). AEC 14.40 resources whose digests match an
   audited 13.10 engine resource are mapped to that exact engine.
 
-To display the reader's live monitor version and U62 serial, the native GUI
-optionally uses the original 600-byte `7e1df8` read-only applet. It is not
-bundled with this source release. `build-lt48uxp identity` extracts the applet
-from the recognized owned `WLT48UXP.exe`, verifies its SHA-256, and places it
-under `~/.config/labtool48uxp/identity-applet.bin`. Alternatively set
-`LABTOOL48_IDENTITY_APPLET` to the same verified applet. Without it the live
-monitor version is still shown, while the serial is marked unavailable.
+By default the native GUI uses the bundled, source-built ZAPPLET to read only
+the live monitor model and firmware version; it does not request a serial.
+The original 600-byte `7e1df8` read-only serial applet remains available with
+`-DORIGINAL_IDENTITY_APPLET=ON` (or
+`LT48_ORIGINAL_IDENTITY_APPLET=ON ./build-lt48uxp install`). It is not bundled
+with this source release. `build-lt48uxp identity`, `install` and `postinst`
+still extract it from the original `WLT48UXP.exe`, verify its SHA-256, and put
+it in `~/.config/labtool48uxp/identity-applet.bin`. You can also set
+`LABTOOL48_IDENTITY_APPLET` to the same verified applet in the original mode.
 
 For reference, the supported Dataman executable's SHA-256 is:
 

@@ -4560,13 +4560,13 @@ static void programmer_init_worker(
             context, request->bus, request->address, &programmer
         );
     if (result->status == LT48_OK)
-        result->identity_status = lt48_programmer_identify(
-            programmer, request->serial_applet_path, request->timeout_ms,
-            &result->identity);
-    if (result->status == LT48_OK)
         result->status = lt48_programmer_transport_initialize(
             programmer, request->timeout_ms, &result->transport
         );
+    if (result->status == LT48_OK)
+        result->identity_status = lt48_programmer_identify(
+            programmer, request->serial_applet_path, request->timeout_ms,
+            &result->identity);
     lt48_programmer_close(programmer);
     lt48_context_destroy(context);
     g_task_return_pointer(task, result, g_free);
@@ -4574,11 +4574,15 @@ static void programmer_init_worker(
 
 static char *programmer_identity_text(const programmer_init_result *result) {
     if (result->identity_status != LT48_OK)
-        return g_strdup("Live reader identity unavailable");
+        return g_strdup_printf("Live reader identity unavailable: %s",
+            lt48_status_string(result->identity_status));
     if (result->identity.serial_status == LT48_OK)
         return g_strdup_printf("%s firmware %s SN %s",
             result->identity.model, result->identity.firmware_version,
             result->identity.serial);
+    if (result->identity.serial_status == LT48_UNSUPPORTED)
+        return g_strdup_printf("%s firmware %s",
+            result->identity.model, result->identity.firmware_version);
     return g_strdup_printf("%s firmware %s — serial unavailable",
         result->identity.model, result->identity.firmware_version);
 }

@@ -2181,9 +2181,10 @@ LT48_API lt48_status lt48_programmer_open(
 );
 LT48_API void lt48_programmer_close(lt48_programmer *programmer);
 
-/* Reads the monitor banner from the claimed reader. The optional, verified
- * original security-info applet reads the serial without a licence check.
- * A missing applet leaves serial empty and serial_status=LT48_NOT_FOUND. */
+/* Reads model and firmware from the claimed reader. The default, bundled
+ * ZAPPLET reads the monitor banner only (serial_status=LT48_UNSUPPORTED).
+ * ORIGINAL_IDENTITY_APPLET enables the prior original security-info applet;
+ * a missing original applet leaves serial_status=LT48_NOT_FOUND. */
 LT48_API lt48_status lt48_programmer_identify(
     lt48_programmer *programmer, const char *serial_applet_path,
     unsigned timeout_ms, lt48_reader_identity *out_identity

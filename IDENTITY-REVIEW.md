@@ -2,23 +2,34 @@
 
 ## Stato attuale: identità live UXP
 
-`lt48_programmer_describe()` resta una fotografia dei descrittori USB, ma non
-fornisce più un modello inventato quando `iProduct` è assente. La nuova
-`lt48_programmer_identify()` opera sul lettore già aperto e reclama due fonti
-distinte, senza usare `bcdDevice` come versione firmware:
+La configurazione predefinita usa lo ZAPPLET scritto nel progetto (sorgente
+ASM e binario in `c/applets/identity/`): legge **solo modello e versione
+firmware** dal banner monitor, tramite il protocollo privato LTID/LTRS. Il
+seriale non viene richiesto e non compare nella UI. Un banner di fallback
+`LabTool-UNKNOWN Firmware Version 0.00` viene rifiutato, non mostrato come
+identità reale. Per tornare al percorso originale di sola lettura U62 si
+configura `-DORIGINAL_IDENTITY_APPLET=ON`.
 
-- comando monitor `51 AA 55`: banner letto dal programmatore, ad esempio
+`lt48_programmer_describe()` resta una fotografia dei descrittori USB, ma non
+fornisce più un modello inventato quando `iProduct` è assente.
+`lt48_programmer_identify()` opera sul lettore già aperto, senza usare
+`bcdDevice` come versione firmware:
+
+- default: ZAPPLET chiama internamente il comando monitor `51`, ottenendo
+  il banner dal programmatore, ad esempio
   `LabTool-48UXP Firmware Version 4.10`; modello e versione sono estratti dal
   testo ricevuto, non derivati dal PID;
-- applet originale di sola lettura `7e1df8`: 13 byte ottenuti dal lettore e
+- opt-in `ORIGINAL_IDENTITY_APPLET`: comando monitor `51 AA 55` dal host
+  e applet originale di sola lettura `7e1df8`; i suoi 13 byte vengono
   decodificati per ottenere il seriale U62, ad esempio `AE0605100067`.
 
 L'applet (600 byte, SHA-256 `aaca6cb58adbbfa66e5b42a78c3389f4b14b92717b55f333942a06b38d8e942c`)
 non è distribuito nel repository: `build-lt48uxp install`, `postinst` o
-`identity` lo estraggono dall'EXE originale verificandone l'hash. Un'installazione
-senza l'applet mostra il banner reale e **seriale non disponibile**; non usa
-mai l'eventuale `iSerialNumber` come sostituto. La GUI mostra entrambi dopo il
-probe live e i report schema 4 li registrano separatamente dal `bcdDevice` USB.
+`identity` lo estraggono dall'EXE originale verificandone l'hash. Nel default
+non viene usato: la GUI mostra il solo modello e firmware reali e il report
+schema 4 lascia il seriale vuoto. Nella modalità opt-in, se l'applet originale
+manca, compare **seriale non disponibile**; non si usa mai `iSerialNumber`
+come sostituto.
 
 Il contratto di capability per lettori classici/SPP e adattatori resta da
 progettare: l'identity live qui è specifica del monitor UXP, non prova che un

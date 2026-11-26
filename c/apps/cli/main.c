@@ -3771,9 +3771,6 @@ static int programmer_read_m37(int argc, char **argv) {
     if (status != LT48_OK) goto hardware_fail;
     status = lt48_programmer_open(context, bus, address, &programmer);
     if (status != LT48_OK) goto hardware_fail;
-    has_reader_identity = lt48_programmer_identify(programmer,
-        getenv("LABTOOL48_IDENTITY_APPLET"), (unsigned)parsed_timeout,
-        &reader_identity) == LT48_OK;
     {
         lt48_transport_info ready_info = {0};
         status = lt48_programmer_transport_initialize(
@@ -3781,6 +3778,9 @@ static int programmer_read_m37(int argc, char **argv) {
         );
         if (status != LT48_OK) goto hardware_fail;
     }
+    has_reader_identity = lt48_programmer_identify(programmer,
+        getenv("LABTOOL48_IDENTITY_APPLET"), (unsigned)parsed_timeout,
+        &reader_identity) == LT48_OK;
     status = lt48_programmer_arm_m37_read(
         programmer, resources, LT48_M37_READ_HARDWARE_AUTHORIZATION
     );

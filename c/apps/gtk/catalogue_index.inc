@@ -1,9 +1,5 @@
 /* Display/search cache only. Operation owners independently reopen and validate
  * their source resources. No cached flag authorizes hardware execution. */
-#ifdef G_OS_UNIX
-#include <dlfcn.h>
-#endif
-
 static gboolean catalogue_hash_file(GChecksum *sum, const char *path,
     GCancellable *cancel) {
     GFile *file=g_file_new_for_path(path);
@@ -47,22 +43,14 @@ static gboolean catalogue_hash_directory(GChecksum *sum,const char *path,
 static char *catalogue_fingerprint(const char *path,GCancellable *cancel) {
     if(!path||!*path)return NULL;
     GChecksum *sum=g_checksum_new(G_CHECKSUM_SHA256);
-    const char *schema="lt48-gtk-index-v2";
+    const char *schema="lt48-gtk-index-v3";
     g_checksum_update(sum,(const guchar *)schema,strlen(schema)+1);
+    const char *support=LT48_CATALOGUE_SUPPORT_FINGERPRINT;
+    g_checksum_update(sum,(const guchar *)support,strlen(support)+1);
     char *canonical=g_canonicalize_filename(path,NULL);
     g_checksum_update(sum,(const guchar *)canonical,strlen(canonical)+1);
     gboolean ok=catalogue_hash_directory(sum,path,FALSE,cancel);
     g_free(canonical);
-    /* Bind support decisions to the actual native library image, not just its
-     * human version. On platforms without image discovery, disable reuse. */
-#ifdef G_OS_UNIX
-    Dl_info info;
-    if(!dladdr((void *)(uintptr_t)lt48_version_string,&info)||!info.dli_fname)
-        ok=FALSE;
-    else if(ok)ok=catalogue_hash_file(sum,info.dli_fname,cancel);
-#else
-    ok=FALSE;
-#endif
     char library[4096];lt48_status st=lt48_new_device_lib_default_path(library,sizeof library);
     if(ok&&st==LT48_OK) {
         char *manifest=g_build_filename(library,"library.json",NULL);
@@ -83,10 +71,12 @@ static char *catalogue_fingerprint(const char *path,GCancellable *cancel) {
 }
 
 static GBytes *catalogue_index_get(lt48_installation *x,const char *fingerprint,
-    GCancellable *cancel,gboolean *cache_hit) {
+    GCancellable *cancel,gboolean *cache_hit,gint *progress_done,
+    gint *progress_total) {
     size_t count=lt48_installation_device_count(x);
     if(cache_hit)*cache_hit=FALSE;
     if(count>1000000u)return NULL;
+    g_atomic_int_set(progress_total,(gint)count);
     char *directory=g_build_filename(g_get_user_cache_dir(),"labtool48","catalogue",NULL);
     char *name=fingerprint?g_strconcat(fingerprint,".idx",NULL):NULL;
     char *path=name?g_build_filename(directory,name,NULL):NULL;
@@ -109,6 +99,7 @@ static GBytes *catalogue_index_get(lt48_installation *x,const char *fingerprint,
         g_free(contents);contents=NULL;
         if(valid) {
             if(cache_hit)*cache_hit=TRUE;
+            g_atomic_int_set(progress_done,(gint)count);
             g_free(path);g_free(directory);
             return g_bytes_new_take(flags,count*sizeof *flags);
         }
@@ -117,6 +108,7 @@ static GBytes *catalogue_index_get(lt48_installation *x,const char *fingerprint,
     g_free(contents);
     guint16 *flags=g_new0(guint16,count?count:1);
     for(size_t i=0;i<count;i++) {
+        if((i&63u)==0u)g_atomic_int_set(progress_done,(gint)i);
         if(cancel&&g_cancellable_is_cancelled(cancel)){g_free(flags);g_free(path);g_free(directory);return NULL;}
         lt48_catalogue_entry e;lt48_operation_support support[LT48_OPERATION_KIND_COUNT];
         size_t n;const char *profile=NULL;int complete=0;
@@ -129,6 +121,7 @@ static GBytes *catalogue_index_get(lt48_installation *x,const char *fingerprint,
             lt48_microwire_close(m);
         }
     }
+    g_atomic_int_set(progress_done,(gint)count);
     if (path) {
         char *current=catalogue_fingerprint(lt48_installation_path(x),cancel);
         gboolean unchanged=current&&!strcmp(current,fingerprint);g_free(current);

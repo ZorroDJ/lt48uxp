@@ -18,6 +18,38 @@ add_executable(labtool48 c/apps/cli/main.c)
 target_link_libraries(labtool48 PRIVATE LabTool48::core)
 add_executable(labtool48-gtk c/apps/gtk/main.c c/apps/gtk/property_sheet.c)
 target_link_libraries(labtool48-gtk PRIVATE LabTool48::core PkgConfig::GTK4 ${CMAKE_DL_LIBS})
+# The search index depends on operation-support code, not the entire shared
+# library: reader identity, report and USB changes cannot alter these flags.
+get_target_property(lt48_support_sources labtool48_core SOURCES)
+list(FILTER lt48_support_sources EXCLUDE REGEX
+  "(^|/)(usb_libusb|reader_identity|operation_report|fx2_firmware|contact_check|hardware_test)\\.c$")
+file(GLOB_RECURSE lt48_support_headers CONFIGURE_DEPENDS
+  "${CMAKE_CURRENT_SOURCE_DIR}/c/src/*.h"
+  "${CMAKE_CURRENT_SOURCE_DIR}/c/src/*.inc"
+  "${CMAKE_CURRENT_SOURCE_DIR}/c/include/*.h"
+  "${CMAKE_CURRENT_SOURCE_DIR}/NewDeviceLib/*.h"
+  "${CMAKE_CURRENT_SOURCE_DIR}/NewDeviceLib/*.inc")
+set(lt48_index_inputs ${lt48_support_sources} ${lt48_support_headers}
+  c/apps/gtk/catalogue_filter.inc c/apps/gtk/catalogue_index.inc core_sources.cmake)
+list(REMOVE_DUPLICATES lt48_index_inputs)
+list(SORT lt48_index_inputs)
+set(lt48_index_source_digests "")
+foreach(source IN LISTS lt48_index_inputs)
+  if(IS_ABSOLUTE "${source}")
+    set(absolute_source "${source}")
+  else()
+    set(absolute_source "${CMAKE_CURRENT_SOURCE_DIR}/${source}")
+  endif()
+  file(SHA256 "${absolute_source}" source_digest)
+  string(APPEND lt48_index_source_digests "${source}:${source_digest}\n")
+  set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${absolute_source}")
+endforeach()
+string(APPEND lt48_index_source_digests
+  "compiler:${CMAKE_C_COMPILER_ID}:${CMAKE_C_COMPILER_VERSION}\n"
+  "flags:${CMAKE_C_FLAGS}:${CMAKE_C_FLAGS_RELEASE}:${CMAKE_BUILD_TYPE}\n")
+string(SHA256 lt48_index_support_fingerprint "${lt48_index_source_digests}")
+target_compile_definitions(labtool48-gtk PRIVATE
+  LT48_CATALOGUE_SUPPORT_FINGERPRINT="${lt48_index_support_fingerprint}")
 foreach(target labtool48_core labtool48 labtool48-gtk)
  set_target_properties(${target} PROPERTIES C_STANDARD 11 C_STANDARD_REQUIRED YES C_EXTENSIONS NO INSTALL_RPATH "$ORIGIN/../lib")
  if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")

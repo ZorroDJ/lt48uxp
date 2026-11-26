@@ -62,31 +62,6 @@ static void hash_u32(lt48_sha256_context *hash, uint32_t value) {
     lt48_sha256_update(hash, bytes, sizeof(bytes));
 }
 
-static lt48_status hash_file(
-    const char *path, unsigned char digest[LT48_SHA256_SIZE]
-) {
-    unsigned char buffer[8192];
-    lt48_sha256_context hash;
-    FILE *file = fopen(path, "rb");
-    if (file == NULL) return LT48_FILE_ERROR;
-    lt48_sha256_init(&hash);
-    for (;;) {
-        size_t size = fread(buffer, 1, sizeof(buffer), file);
-        if (size != 0u) lt48_sha256_update(&hash, buffer, size);
-        if (size != sizeof(buffer)) {
-            if (ferror(file)) {
-                fclose(file);
-                return LT48_FILE_ERROR;
-            }
-            break;
-        }
-    }
-    if (fclose(file) != 0) return LT48_FILE_ERROR;
-    lt48_sha256_final(&hash, digest);
-    lt48_rez_digest_normalize(digest);
-    return LT48_OK;
-}
-
 static lt48_status make_definition_path(
     const lt48_installation *installation, uint16_t device_class,
     char **out_path
@@ -280,10 +255,14 @@ lt48_status lt48_installation_audit_m37(
     if (status != LT48_OK) return status;
     status = make_definition_path(installation, entry.device_class, &path);
     if (status != LT48_OK) return status;
-    status = hash_file(path, out_audit->definition_sha256);
-    if (status == LT48_OK) status = lt48_rez_open(path, &rez);
+    status = lt48_rez_open(path, &rez);
     free(path);
     if (status != LT48_OK) return status;
+    status = lt48_rez_sha256(rez, out_audit->definition_sha256);
+    if (status != LT48_OK) {
+        lt48_rez_close(rez);
+        return status;
+    }
 
     snprintf(name, sizeof(name), "D%x", entry.device_type);
     status = lt48_rez_find_resource(rez, name, &definition_index);

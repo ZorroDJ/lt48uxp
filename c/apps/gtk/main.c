@@ -381,6 +381,9 @@ typedef struct app_widgets {
     GCancellable *buffer_cancellable;
     char *catalogue_fingerprint;
     GCancellable *catalogue_cancellable;
+    gint catalogue_progress_done;
+    gint catalogue_progress_total;
+    guint catalogue_progress_source;
     GCancellable *operation_prepare_cancellable;
     GCancellable *image_inspect_cancellable;
     guint active_background_tasks;
@@ -586,6 +589,8 @@ typedef struct catalogue_task {
     char *query;
     guint type_filter;
     gboolean supported_only;
+    gint *progress_done;
+    gint *progress_total;
     lt48_auto_id_observation observation;
 } catalogue_task;
 
@@ -5102,35 +5107,7 @@ static void catalogue_set_busy(app_widgets *widgets, gboolean busy) {
     gtk_widget_set_visible(widgets->catalogue_cancel_button, busy);
 }
 
-/* Additional technology filters use admitted operation profiles, not name prefixes. */
-static guint memory_filter_mask(const lt48_installation *x,size_t index,
-    const lt48_catalogue_entry *entry,const char *profile) {
-    if(entry->device_class==2034u&&entry->device_type==9u&&!strcmp(entry->vendor,"SIERRA"))return 1u<<6;
-
-    if(entry->device_class!=2000 && entry->device_class!=2002 && entry->device_class!=2003 && entry->device_class!=2004 && entry->device_class!=2008 && entry->device_class!=2007 && entry->device_class!=2005 && entry->device_class!=2029 && entry->device_class!=2006 &&
-       entry->device_class!=2010 && entry->device_class!=2011 && entry->device_class!=2012 &&
-       entry->device_class!=2030 && entry->device_class!=2032 && entry->device_class!=2031 && entry->device_class!=2033 && entry->device_class!=2034 && entry->device_class!=2043 && entry->device_class!=2044 && entry->device_class!=2041 && entry->device_class!=2045 && entry->device_class!=2009)return FALSE;
-    gboolean page_nor=!strcmp(profile,"at29word-eight-operation");
-    if(entry->device_class==2043) {
-        lt48_serial_page_resources *r=NULL;
-        if(lt48_serial_page_open(x,index,&r)==LT48_OK)page_nor=lt48_serial_page_is_nor(r);
-        lt48_serial_page_close(r);
-    }
-    gboolean gdac=!strcmp(profile,"gdac-serial-six-operation");
-    gboolean flash=!strcmp(profile,"legacy28f-seven-operation") || (!strcmp(profile,"legacy-nor-seven-operation")||!strcmp(profile,"mx27page-otp-six-operation")) || !strcmp(profile,"compact-flash-nine-operation") || (gdac && entry->device_type!=0x1d) || !strcmp(profile,"legacy-dataflash-six-operation") || (!strcmp(profile,"gaaf-serial-six-operation") || (!strcmp(profile,"nexflash-eight-operation") || !strcmp(profile,"w45d-eight-operation"))) || (entry->device_class==2030 || entry->device_class==2032 || entry->device_class==2031 || entry->device_class==2033 || entry->device_class==2044 || entry->device_class==2041 || entry->device_class==2045) || !strcmp(profile,"w27-seven-operation") ||
-        page_nor;
-    gboolean resistive=entry->device_class==2044 && entry->device_type>=0x12 && entry->device_type<=0x15;
-    gboolean at28_eeprom=!strcmp(profile,"at28c64b1-seven-operation")||(!strcmp(profile,"eep2041-three-seven-operation")||!strcmp(profile,"white3-seven-operation"));
-    gboolean x88_eeprom=entry->device_class==2005&&entry->device_type==0x28&&entry->vendor&&!strcmp(entry->vendor,"Xicor");
-    if(resistive||at28_eeprom||x88_eeprom)flash=FALSE;
-    gboolean backed=resistive || strstr(profile,"nvram") || strstr(profile,"fram") ||
-        strstr(profile,"sram") || (!strcmp(profile,"stk10c68-seven-operation")||!strcmp(profile,"stk11c68-seven-operation"));
-    gboolean eeprom=!flash && !backed && (x88_eeprom || at28_eeprom || (gdac && entry->device_type==0x1d) || strstr(profile,"eeprom") ||
-        !strcmp(profile,"at17n-eight-operation") || !strcmp(profile,"page-i2c-eight-operation") || !strcmp(profile,"page-i2c-nine-operation") || !strcmp(profile,"serial-page-seven-operation") || !strcmp(profile,"spi-page-eight-operation") ||
-        (!strcmp(profile,"compact-spi-seven-operation") || !strcmp(profile,"compact-spi-eight-operation") || !strcmp(profile,"idlock-nine-operation") || !strcmp(profile,"incremental-eight-operation") || !strcmp(profile,"compact-flash-nine-operation")) || (!strcmp(profile,"compact-i2c-seven-operation") || !strcmp(profile,"compact-i2c-eight-operation") || !strcmp(profile,"endurance-nine-operation") || (!strcmp(profile,"spd-nine-operation") || !strcmp(profile,"at17-compact-eight-operation"))) ||
-        !strcmp(profile,"microwire-seven-operation"));
-    return (eeprom?(1u<<6):0u)|(flash?(1u<<7):0u)|(backed?(1u<<8):0u);
-}
+#include "catalogue_filter.inc"
 
 static G_GNUC_UNUSED gboolean memory_filter_matches(const lt48_installation *x,
     size_t index,const lt48_catalogue_entry *entry,guint filter) {
@@ -5178,7 +5155,8 @@ static void catalogue_task_worker(
         result->status = LT48_CANCELLED;
     if (result->status == LT48_OK && request->kind == CATALOGUE_TASK_SEARCH) {
         GBytes *index_data = catalogue_index_get(result->installation,
-            result->fingerprint, cancellable, &result->index_cache_hit);
+            result->fingerprint, cancellable, &result->index_cache_hit,
+            request->progress_done, request->progress_total);
         const guint16 *flags = index_data ? g_bytes_get_data(index_data, NULL) : NULL;
         if (!flags) result->status = g_cancellable_is_cancelled(cancellable) ? LT48_CANCELLED : LT48_SAFETY_REJECTED;
         char *folded_query = device_search_key(request->query);
@@ -5272,6 +5250,10 @@ static void catalogue_task_finished(
         G_TASK(async_result), NULL);
     char *message;
     (void)source;
+    if (widgets->catalogue_progress_source != 0u) {
+        g_source_remove(widgets->catalogue_progress_source);
+        widgets->catalogue_progress_source = 0u;
+    }
     catalogue_set_busy(widgets, FALSE);
     g_clear_object(&widgets->catalogue_cancellable);
     if (result == NULL) {
@@ -5545,6 +5527,21 @@ static void catalogue_task_finished(
     catalogue_task_result_free(result);
 }
 
+static gboolean catalogue_progress_tick(gpointer data) {
+    app_widgets *widgets = data;
+    gint total = g_atomic_int_get(&widgets->catalogue_progress_total);
+    if (total > 0 && widgets->catalogue_cancellable != NULL &&
+        !g_cancellable_is_cancelled(widgets->catalogue_cancellable)) {
+        gint done = g_atomic_int_get(&widgets->catalogue_progress_done);
+        char *message = g_strdup_printf(
+            "Indexing device support: %d/%d definitions checked… No USB access.",
+            done, total);
+        gtk_label_set_text(GTK_LABEL(widgets->device_status), message);
+        g_free(message);
+    }
+    return G_SOURCE_CONTINUE;
+}
+
 static void catalogue_start(app_widgets *widgets, catalogue_task *request) {
     GTask *task;
     if (widgets->catalogue_cancellable != NULL) {
@@ -5557,6 +5554,10 @@ static void catalogue_start(app_widgets *widgets, catalogue_task *request) {
         request->reuse_fingerprint = g_strdup(widgets->catalogue_fingerprint);
     }
     widgets->catalogue_cancellable = g_cancellable_new();
+    g_atomic_int_set(&widgets->catalogue_progress_done, 0);
+    g_atomic_int_set(&widgets->catalogue_progress_total, 0);
+    request->progress_done = &widgets->catalogue_progress_done;
+    request->progress_total = &widgets->catalogue_progress_total;
     task = tracked_task_new(
         widgets, widgets->catalogue_cancellable, catalogue_task_finished);
     g_task_set_check_cancellable(task, FALSE);
@@ -5572,6 +5573,8 @@ static void catalogue_start(app_widgets *widgets, catalogue_task *request) {
         request->kind == CATALOGUE_TASK_AUDIT ?
         "Auditing every installed definition… No USB access is used." :
         "Loading and searching the catalogue… No USB access is used.");
+    widgets->catalogue_progress_source = g_timeout_add(
+        200u, catalogue_progress_tick, widgets);
     g_task_run_in_thread(task, catalogue_task_worker);
     g_object_unref(task);
 }
@@ -18902,10 +18905,16 @@ static char *database_registry_load(app_widgets *widgets) {
     }
     for (gsize index = 0u; index < count; ++index) {
         char *canonical = g_canonicalize_filename(paths[index], NULL);
-        if (!database_registry_contains(widgets, canonical))
+        if (!g_file_test(canonical, G_FILE_TEST_IS_DIR))
+            g_free(canonical);
+        else if (!database_registry_contains(widgets, canonical))
             g_ptr_array_add(widgets->database_paths, canonical);
         else
             g_free(canonical);
+    }
+    if (active != NULL && !g_file_test(active, G_FILE_TEST_IS_DIR)) {
+        g_free(active);
+        active = NULL;
     }
     g_strfreev(paths);
     g_key_file_unref(key_file);
@@ -19633,6 +19642,8 @@ static GtkWidget *build_device_page(app_widgets *widgets) {
     if (default_path == NULL || default_path[0] == '\0') {
         if (saved_active_path != NULL && saved_active_path[0] != '\0')
             default_path = saved_active_path;
+        else if (widgets->database_paths->len != 0u)
+            default_path = g_ptr_array_index(widgets->database_paths, 0u);
         else {
             owned_default_path = project_path("AEC/LabTool-48UXP");
             if (owned_default_path == NULL)
